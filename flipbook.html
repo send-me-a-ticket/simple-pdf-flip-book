@@ -1,0 +1,2092 @@
+<!doctype html>
+<html lang="en-AU" data-theme="atelier">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Flipbook — eBook Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=DM+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&family=Newsreader:opsz,ital,wght@6..72,0,400;6..72,0,600;6..72,1,400&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap">
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   FLIPBOOK — eBook Reader
+   Warm chrome, cream paper, brick accent. Fraunces for display and numerals,
+   DM Sans for interface copy.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --ink:#241f1b; --muted:#756c63;
+  --chrome:rgba(247,242,234,.86); --chrome-solid:#f7f2ea;
+  --stage:#aa9f91; --stage-dark:#776d63;
+  --paper:#fffdf8; --paper-2:#f6f1e6;
+  --line:rgba(57,47,38,.14); --accent:#9a493d; --accent-soft:rgba(154,73,61,.14);
+  --shadow:rgba(39,29,21,.28);
+  --sheet-a:#f2ebdc; --sheet-b:#bfb2a0;
+  --board-a:#8b453b; --board-b:#5d2f2a;
+  --ui:"DM Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --display:"Fraunces",Georgia,serif;
+  --ease:cubic-bezier(.2,.78,.2,1);
+  --page-w:520px; --page-h:740px; --col-w:430px; --col-h:640px; --gap:90px;
+  --m-x:45px; --m-y:50px; --stack-l:6px; --stack-r:22px;
+  --read-size:100%; --read-lead:1.58; --flip-ms:620ms;
+  --flip-shadow:rgba(76,48,31,.34); --flip-light:rgba(255,255,255,.72);
+}
+[data-theme="sepia"]{
+  --ink:#38291d; --muted:#7c6653;
+  --chrome:rgba(236,221,197,.9); --chrome-solid:#ecddc5;
+  --stage:#927a64; --stage-dark:#665446;
+  --paper:#f6e9d2; --paper-2:#eddcbe;
+  --line:rgba(72,49,30,.18); --accent:#8b4334; --accent-soft:rgba(139,67,52,.16);
+  --shadow:rgba(51,31,18,.34);
+  --sheet-a:#e9d9b8; --sheet-b:#b39d7c;
+  --flip-shadow:rgba(76,47,24,.38); --flip-light:rgba(255,248,225,.62);
+}
+[data-theme="midnight"]{
+  --ink:#dcd9d4; --muted:#a7a099;
+  --chrome:rgba(25,26,27,.9); --chrome-solid:#191a1b;
+  --stage:#292b2c; --stage-dark:#111213;
+  --paper:#202223; --paper-2:#1a1c1d;
+  --line:rgba(255,255,255,.13); --accent:#d68474; --accent-soft:rgba(214,132,116,.18);
+  --shadow:rgba(0,0,0,.6);
+  --sheet-a:#3a3d3f; --sheet-b:#232627;
+  --board-a:#5c332e; --board-b:#33201d;
+  --flip-shadow:rgba(0,0,0,.58); --flip-light:rgba(255,255,255,.2);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{
+  font-family:var(--ui); font-size:14px; color:var(--ink); background:var(--stage);
+  -webkit-font-smoothing:antialiased;
+  /* Selection is opted into, never inherited. Without this a drag that starts on
+     chrome runs through the whole document and copies nonsense. */
+  user-select:none; -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button,input,select{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+#app{
+  height:100dvh; display:grid; grid-template-rows:auto 1fr auto;
+  background:radial-gradient(circle at 50% 34%,rgba(255,255,255,.16),transparent 46%),
+             linear-gradient(170deg,var(--stage) 0%,var(--stage) 42%,var(--stage-dark) 100%);
+  transition:background .35s linear;
+}
+
+/* ── chrome bars ──────────────────────────────────────────────────────── */
+.bar{
+  z-index:50; display:flex; align-items:center; gap:9px;
+  padding:10px clamp(11px,2vw,26px);
+  background:var(--chrome); backdrop-filter:blur(18px) saturate(1.2);
+  transition:opacity .34s linear, transform .34s var(--ease);
+}
+#topbar{border-bottom:1px solid var(--line)}
+#bottombar{border-top:1px solid var(--line);min-height:68px;justify-content:center}
+.brand{display:flex;align-items:center;gap:10px;margin-right:4px}
+.brand-mark{
+  width:28px;height:33px;border-radius:3px 8px 8px 3px;background:var(--accent);
+  box-shadow:inset 4px 0 rgba(0,0,0,.18),4px 4px 0 rgba(0,0,0,.16);
+  transform:rotate(-3deg);flex:0 0 auto;
+}
+.brand strong{display:block;font:650 19px/1 var(--display);letter-spacing:.01em}
+.brand small{display:block;margin-top:3px;color:var(--muted);font-size:9.5px;
+  letter-spacing:.14em;text-transform:uppercase}
+.spacer{flex:1;min-width:6px}
+#status{max-width:250px;color:var(--muted);font-size:12px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+#status[data-kind="err"]{color:#c54c40}
+#status[data-kind="ok"]{color:var(--accent)}
+
+.pill,.ico,.nav,.chip{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  border:1px solid transparent;border-radius:999px;min-height:38px;padding:0 13px;
+  transition:background .16s,border-color .16s,color .16s,transform .16s;
+}
+.ico{width:40px;padding:0;font-size:17px}
+.focus-glyph{width:22px;height:22px;display:block;overflow:visible}
+.focus-glyph ellipse{vector-effect:non-scaling-stroke}
+.pill{background:rgba(255,255,255,.34);border-color:var(--line);font-size:12px;
+  font-weight:600;letter-spacing:.02em}
+.ico:hover,.pill:hover,.chip:hover{background:var(--accent-soft);border-color:var(--line)}
+.pill[aria-pressed="true"],.chip[aria-pressed="true"]{background:var(--accent);
+  border-color:var(--accent);color:#fff7ef}
+.pill input{display:none}
+.lbl{display:inline}
+.sep{width:1px;height:24px;background:var(--line);flex:0 0 auto;margin:0 2px}
+
+/* ── stage ────────────────────────────────────────────────────────────── */
+#stage{
+  position:relative;min-height:0;display:grid;place-items:center;overflow:hidden;
+  padding:clamp(12px,2.4vw,34px) clamp(12px,2.4vw,34px) clamp(24px,3.2vw,46px);
+  perspective:2800px;perspective-origin:50% 44%;
+}
+#grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.15;
+  background-image:radial-gradient(rgba(255,255,255,.4) .5px,transparent .7px),
+                   radial-gradient(rgba(0,0,0,.28) .5px,transparent .7px);
+  background-position:0 0,4px 5px;background-size:8px 8px}
+/* Portrait keeps the whole book mounted and pans a window across it, so the
+   off-window page has to fall away softly rather than being chopped. */
+#edges{position:absolute;inset:0;z-index:9;pointer-events:none;opacity:0;
+  transition:opacity .45s linear;
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.46) 0,
+    rgba(0,0,0,.14) calc(var(--peek) * .6),
+    rgba(0,0,0,0) calc(var(--peek) * .92),
+    rgba(0,0,0,0) calc(100% - var(--peek) * .92),
+    rgba(0,0,0,.14) calc(100% - var(--peek) * .6),
+    rgba(0,0,0,.46) 100%)}
+#app[data-view="1"] #edges{opacity:1}
+
+#deck{
+  /* A zero-width anchor prevents the oversized two-page spread from enlarging
+     the grid track in portrait view. Its origin is always the stage centre. */
+  position:relative;width:0;min-width:0;height:var(--page-h);
+  transform-style:preserve-3d;will-change:transform;
+  transition:transform .74s var(--ease);
+}
+#book{
+  position:absolute;top:0;left:0;transform:translateX(-50%);transform-style:preserve-3d;
+  background:var(--paper-2);border-radius:3px;
+  box-shadow:0 34px 74px -26px var(--shadow);
+}
+#book[data-state="shelf"]{display:none}
+#book[data-state="closed-front"],#book[data-state="closed-back"]{
+  background:transparent;box-shadow:none}
+
+.slot{position:absolute;top:0;height:100%;overflow:hidden;background:var(--paper);
+  border:1px solid var(--line)}
+#slotL{left:0;border-radius:9px 2px 2px 9px;box-shadow:inset -26px 0 26px -30px var(--shadow)}
+#slotR{right:0;border-radius:2px 9px 9px 2px;box-shadow:inset 26px 0 26px -30px var(--shadow)}
+#book[data-state="closed-front"] .slot,#book[data-state="closed-back"] .slot,
+#book[data-state="closed-front"] #gutter,#book[data-state="closed-back"] #gutter{visibility:hidden}
+/* During a turn the covered page must stay on screen until the leaf lands on it. */
+#book.turning .slot,#book.turning #gutter{visibility:visible}
+
+#gutter{position:absolute;top:0;bottom:0;left:50%;width:48px;transform:translateX(-50%);
+  z-index:7;pointer-events:none;opacity:.6;
+  background:linear-gradient(90deg,transparent,rgba(0,0,0,.14) 44%,rgba(255,255,255,.2) 50%,rgba(0,0,0,.14) 56%,transparent)}
+[data-theme="midnight"] #gutter{mix-blend-mode:normal;opacity:.5;
+  background:linear-gradient(90deg,transparent,rgba(0,0,0,.55) 50%,transparent)}
+
+/* ── paper depth: the stack of leaves either side, near full page height ── */
+.stack{
+  position:absolute;top:2px;bottom:2px;z-index:0;border-radius:4px;
+  background:repeating-linear-gradient(90deg,var(--sheet-a) 0 1px,var(--sheet-b) 1px 2px);
+  box-shadow:0 8px 18px -6px var(--shadow);
+  transition:width .5s var(--ease),opacity .35s linear;opacity:0;
+}
+#stackL{right:100%;width:var(--stack-l);border-radius:4px 0 0 4px}
+#stackR{left:100%;width:var(--stack-r);border-radius:0 4px 4px 0}
+#book[data-state="open"] .stack,#book.turning .stack{opacity:1}
+.tally{
+  position:absolute;top:50%;z-index:13;transform:translateY(-50%);
+  padding:5px 8px;border:1px solid var(--line);border-radius:7px;
+  background:var(--chrome-solid);color:var(--muted);
+  font:500 9.5px/1 var(--ui);letter-spacing:.05em;white-space:nowrap;
+  box-shadow:0 4px 10px rgba(0,0,0,.12);pointer-events:none;opacity:0;
+  transition:opacity .35s linear;
+}
+#tallyL{right:calc(100% + var(--stack-l) + 7px)}
+#tallyR{left:calc(100% + var(--stack-r) + 7px)}
+#book[data-state="open"] .tally{opacity:1}
+
+/* ── leaves ───────────────────────────────────────────────────────────── */
+.leaf{position:absolute;inset:0;background:var(--paper);overflow:hidden}
+.leaf-vp{position:absolute;overflow:hidden;
+  top:var(--m-y);bottom:var(--m-y);left:var(--m-x);right:var(--m-x)}
+.leaf-shadow{display:block;width:100%;height:100%}
+.folio{position:absolute;left:0;right:0;bottom:calc(var(--m-y) * .34);text-align:center;
+  font:500 11px/1 var(--display);letter-spacing:.1em;color:var(--muted);opacity:.8}
+.runhead{position:absolute;left:var(--m-x);right:var(--m-x);top:calc(var(--m-y) * .34);
+  font:500 9.5px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);opacity:.62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pending{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);
+  font:400 12px var(--ui);letter-spacing:.1em}
+.endpaper{position:absolute;inset:0;
+  background:repeating-linear-gradient(41deg,rgba(0,0,0,.026) 0 2px,transparent 2px 7px),
+             linear-gradient(150deg,var(--paper-2),var(--paper))}
+
+/* ── PDF surfaces ─────────────────────────────────────────────────────── */
+.pdf-fit{position:absolute;top:0;left:0;transform-origin:top left}
+.pdf-cv{position:absolute;inset:0;display:block;width:100%;height:100%;z-index:0}
+[data-theme="midnight"] .pdf-cv{filter:invert(1) hue-rotate(180deg) saturate(.86) brightness(.92)}
+/* pdf.js writes every span position as calc(var(--scale-factor) * Npx). If that
+   variable is missing the declaration is invalid and every span collapses to the
+   origin, which is why selection copies the wrong text. It is set in script. */
+.tlayer{
+  position:absolute;top:0;left:0;z-index:2;overflow:hidden;line-height:1;opacity:1;
+  text-align:initial;transform-origin:0 0;forced-color-adjust:none;
+  text-size-adjust:none;-webkit-text-size-adjust:none;
+  pointer-events:none;user-select:none;-webkit-user-select:none;
+}
+.tlayer.live{pointer-events:auto;user-select:text;-webkit-user-select:text}
+.tlayer span,.tlayer br{
+  position:absolute;display:inline-block;color:transparent;white-space:pre;cursor:text;
+  transform-origin:0 0;user-select:inherit;-webkit-user-select:inherit;
+}
+.tlayer ::selection{background:var(--accent-soft);color:transparent}
+.tlayer ::-moz-selection{background:var(--accent-soft);color:transparent}
+.tlayer mark{background:rgba(245,185,53,.42);color:transparent;border-radius:2px}
+.tlayer mark.on{background:rgba(245,185,53,.9);box-shadow:0 0 0 2px rgba(154,73,61,.45)}
+.tlayer .eoc{display:block;position:absolute;inset:100% 0 0;z-index:-1;cursor:default;
+  user-select:none}
+
+/* ── covers ───────────────────────────────────────────────────────────── */
+.cover{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;
+  background:linear-gradient(150deg,var(--board-a),var(--board-b));
+  border-radius:3px 10px 10px 3px}
+.cover.back{border-radius:10px 3px 3px 10px}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-type{padding:12% 9%;text-align:center;color:#f7f0e4;width:100%}
+.cover-type h1{margin:0;font:650 clamp(17px,2.6vw,36px)/1.14 var(--display);letter-spacing:-.012em}
+.cover-rule{width:42%;height:1px;margin:8% auto;background:rgba(247,240,228,.44)}
+.cover-type p{margin:0;font:400 clamp(10px,1.25vw,13px)/1.5 var(--ui);
+  letter-spacing:.18em;text-transform:uppercase;opacity:.8}
+.cover-imprint{position:absolute;bottom:6.5%;left:0;right:0;text-align:center;
+  font:500 9px/1 var(--ui);letter-spacing:.3em;color:rgba(247,240,228,.5)}
+.cover-hint{position:absolute;bottom:15px;right:15px;padding:7px 12px;border-radius:999px;
+  background:rgba(20,15,12,.5);color:#fff;font:500 11px var(--ui);backdrop-filter:blur(8px)}
+.cover.back .cover-hint{right:auto;left:15px}
+.colophon{position:absolute;inset:0;display:grid;place-items:center;padding:13%;
+  text-align:center;color:var(--muted);font:400 12px/1.9 var(--ui);
+  background:linear-gradient(150deg,var(--paper-2),var(--paper))}
+.colophon b{display:block;margin-bottom:10px;font:650 16px/1.35 var(--display);color:var(--ink)}
+
+/* ── the turning leaf ─────────────────────────────────────────────────── */
+.flipper{position:absolute;top:0;width:50%;height:100%;transform-style:preserve-3d;
+  z-index:20;will-change:transform;transition:transform var(--flip-ms) ease-in-out}
+.flipper.right{left:50%;transform-origin:left center}
+.flipper.left{left:0;transform-origin:right center}
+.flipper.go-next{transform:rotateY(-180deg)}
+.flipper.go-prev{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;overflow:hidden;background:var(--paper);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.face.back{transform:rotateY(180deg)}
+/* Light travelling across the sheet is what sells paper, more than the rotation. */
+.sheen{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;
+  background:linear-gradient(100deg,transparent 25%,var(--flip-shadow) 42%,
+    var(--flip-light) 51%,var(--flip-shadow) 60%,transparent 76%)}
+.flipper.lit .sheen{animation:sweep var(--flip-ms) linear}
+@keyframes sweep{0%{opacity:0;transform:translateX(-62%)}22%{opacity:.85}100%{opacity:0;transform:translateX(62%)}}
+.cast{position:absolute;top:0;bottom:0;width:46%;z-index:18;pointer-events:none;opacity:0}
+.cast.r{left:50%;background:linear-gradient(90deg,rgba(24,16,4,.4),transparent)}
+.cast.l{right:50%;background:linear-gradient(270deg,rgba(24,16,4,.4),transparent)}
+#book.turning .cast{animation:castfade var(--flip-ms) ease-in-out}
+@keyframes castfade{0%,100%{opacity:0}42%{opacity:1}}
+#book.riffling .leaf{filter:blur(.5px)}
+
+/* ── welcome ──────────────────────────────────────────────────────────── */
+#welcome{position:relative;z-index:2;width:min(660px,92vw);
+  padding:clamp(26px,4.6vw,54px);text-align:center;color:#f8f2ea;
+  border:1px solid rgba(255,255,255,.2);border-radius:26px;
+  background:rgba(38,29,22,.18);backdrop-filter:blur(10px);
+  box-shadow:0 28px 70px rgba(41,29,20,.2)}
+#welcome[hidden]{display:none}
+#stage.drop #welcome{border-color:rgba(255,255,255,.7);transform:scale(1.015)}
+#welcome .mini{width:72px;height:92px;margin:0 auto 24px;border-radius:5px 12px 12px 5px;
+  background:var(--accent);transform:rotate(-4deg);
+  box-shadow:inset 8px 0 rgba(0,0,0,.2),9px 9px 0 rgba(255,249,237,.86),12px 12px 0 rgba(0,0,0,.16)}
+#welcome h1{margin:0 0 15px;font:650 clamp(34px,5.6vw,66px)/.98 var(--display);
+  letter-spacing:-.035em}
+#welcome p{max-width:500px;margin:0 auto 24px;line-height:1.66;color:rgba(255,255,255,.8)}
+#welcome .go{display:inline-flex;align-items:center;gap:9px;padding:13px 21px;
+  border-radius:999px;background:#fff7ea;color:#3c2d25;font-weight:600;
+  box-shadow:0 9px 25px rgba(34,23,17,.2)}
+#welcome .note{display:block;margin-top:13px;font-size:11px;letter-spacing:.05em;
+  color:rgba(255,255,255,.6)}
+#welcome kbd{padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.18);font:500 11px var(--ui)}
+
+/* ── bottom bar: nav, folio, riffle track ─────────────────────────────── */
+.nav{width:42px;height:42px;padding:0;border:1px solid var(--line);
+  background:rgba(255,255,255,.3);font-size:19px}
+.nav:disabled{opacity:.3;cursor:default}
+#folioWrap{position:relative;min-width:172px;display:grid;place-items:center}
+#folio{min-width:172px;padding:8px 11px;border-radius:9px;
+  font:500 14px/1 var(--display);letter-spacing:.01em;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+#folio:hover{background:var(--accent-soft)}
+#folioIn{width:98px;padding:8px 10px;text-align:center;border:1px solid var(--accent);
+  border-radius:9px;background:var(--paper);color:var(--ink);
+  font:500 14px var(--display);font-variant-numeric:tabular-nums}
+#track{position:relative;width:min(40vw,470px);height:34px;display:grid;align-items:center;
+  touch-action:none;cursor:ew-resize}
+#rail{position:relative;height:4px;border-radius:999px;background:rgba(0,0,0,.13);
+  transition:height .2s var(--ease),box-shadow .2s linear}
+#railFill{display:block;height:100%;width:0;border-radius:inherit;background:var(--accent);
+  transition:width .18s linear}
+#railMarks{position:absolute;inset:0;pointer-events:none}
+#railMarks i{position:absolute;top:50%;width:2px;height:11px;margin-top:-5.5px;
+  border-radius:1px;background:var(--accent);opacity:.85}
+#knob{position:absolute;top:50%;left:0;width:15px;height:15px;border-radius:50%;
+  border:3px solid var(--chrome-solid);background:var(--accent);
+  box-shadow:0 2px 9px rgba(0,0,0,.26);transform:translate(-50%,-50%) scale(.42);
+  opacity:0;transition:transform .2s var(--ease),opacity .2s linear}
+#track:hover #rail,#track.hot #rail,#track:focus-visible #rail{height:10px;
+  box-shadow:0 0 0 4px var(--accent-soft)}
+#track:hover #knob,#track.hot #knob,#track:focus-visible #knob{
+  transform:translate(-50%,-50%) scale(1);opacity:1}
+#peek{position:absolute;left:0;bottom:40px;display:grid;grid-template-columns:auto auto;
+  align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:12px;
+  background:var(--chrome-solid);box-shadow:0 14px 35px var(--shadow);
+  transform:translate(-50%,6px);opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .16s linear,transform .16s var(--ease)}
+#track:hover #peek,#track.hot #peek{opacity:1;visibility:visible;transform:translate(-50%,0)}
+#peekCv{width:54px;height:70px;object-fit:contain;border-radius:3px;background:var(--paper)}
+#peekCv[hidden]{display:none}
+#peekTxt{max-width:170px;color:var(--muted);font:500 11px/1.4 var(--display)}
+#pct{width:74px;text-align:right;color:var(--muted);font-size:11px;
+  font-variant-numeric:tabular-nums}
+
+/* ── search ───────────────────────────────────────────────────────────── */
+#find{display:flex;align-items:center;gap:5px}
+#findIn{width:168px;padding:9px 12px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(255,255,255,.34);color:var(--ink);font-size:12.5px}
+#findIn::placeholder{color:var(--muted)}
+#findIn:focus{outline:none;border-color:var(--accent);background:var(--paper)}
+#findN{min-width:48px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+
+/* ── panels ───────────────────────────────────────────────────────────── */
+.panel{position:fixed;z-index:80;background:var(--chrome-solid);border:1px solid var(--line);
+  border-radius:18px;box-shadow:0 24px 60px var(--shadow);
+  visibility:hidden;opacity:0;transform:translateY(10px);transition:.22s var(--ease);
+  display:flex;flex-direction:column}
+.panel[data-open="1"]{visibility:visible;opacity:1;transform:none}
+#toc{top:70px;bottom:82px;left:18px;width:min(360px,calc(100vw - 36px))}
+#type{top:70px;right:18px;width:min(336px,calc(100vw - 36px));max-height:calc(100dvh - 160px)}
+.panel header{display:flex;align-items:center;gap:8px;padding:16px 16px 12px;
+  border-bottom:1px solid var(--line)}
+.panel h2{flex:1;margin:0;font:650 22px/1 var(--display)}
+.panel .body{flex:1;overflow-y:auto;padding:10px}
+.x{width:32px;height:32px;border-radius:8px;color:var(--muted);font-size:19px;line-height:1}
+.x:hover{background:var(--accent-soft);color:var(--ink)}
+.toc-item{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;
+  padding:9px 11px;border-radius:9px;color:var(--muted);font-size:13px;line-height:1.45}
+.toc-item:hover{background:var(--accent-soft);color:var(--ink)}
+.toc-item[aria-current="true"]{background:var(--accent);color:#fff7ef}
+.toc-item .n{flex:0 0 auto;min-width:32px;text-align:right;
+  font:500 11px var(--display);font-variant-numeric:tabular-nums;opacity:.85}
+.toc-item .t{flex:1}
+.d1{padding-left:26px}.d2{padding-left:40px}.d3{padding-left:54px}
+.empty{margin:0;padding:14px 12px;color:var(--muted);font-size:12.5px;line-height:1.7}
+.field{padding:12px 6px;border-bottom:1px solid var(--line)}
+.field:last-child{border-bottom:0}
+.field > label{display:block;margin-bottom:9px;color:var(--muted);
+  font:500 10px/1 var(--ui);letter-spacing:.17em;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:34px;padding:0 12px;border-radius:999px;background:rgba(0,0,0,.05);
+  border-color:var(--line);font-size:12px}
+.step{display:flex;align-items:center;gap:8px}
+.step output{flex:1;text-align:center;font:500 13px var(--display);
+  font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+/* ── focus mode and fullscreen ────────────────────────────────────────── */
+#app[data-focus="1"] .bar{opacity:0;pointer-events:none}
+#app[data-focus="1"] #topbar{transform:translateY(-100%)}
+#app[data-focus="1"] #bottombar{transform:translateY(100%)}
+#app[data-focus="1"] #stage{padding:10px}
+#app[data-focus="1"] .bar:focus-within{opacity:1;pointer-events:auto;transform:none}
+#leave{position:fixed;z-index:130;top:14px;right:16px;width:42px;height:42px;
+  border:1px solid rgba(255,255,255,.28);border-radius:50%;
+  background:rgba(25,20,17,.6);color:#fff;font-size:22px;line-height:1;
+  backdrop-filter:blur(12px);box-shadow:0 8px 25px rgba(0,0,0,.26);
+  opacity:0;visibility:hidden;transform:scale(.8);transition:.2s var(--ease)}
+#app[data-focus="1"] #leave{opacity:1;visibility:visible;transform:scale(1)}
+
+#toast{position:fixed;z-index:120;left:50%;top:78px;max-width:min(560px,92vw);
+  padding:11px 17px;border-radius:999px;background:#2d2723;color:#fff;
+  font-size:12px;line-height:1.4;box-shadow:0 12px 35px rgba(0,0,0,.28);
+  transform:translate(-50%,-10px);opacity:0;pointer-events:none;
+  transition:.24s var(--ease);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast[data-kind="err"]{background:#7d2d24}
+#toast[data-kind="warn"]{background:#7a5a17}
+#work{position:absolute;left:0;right:0;top:0;height:2px;z-index:60}
+#work i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .22s linear;box-shadow:0 0 8px var(--accent)}
+#measure{position:fixed;left:-30000px;top:0;z-index:-1;opacity:0;pointer-events:none;
+  background:var(--paper)}
+
+@media(max-width:820px){
+  .brand small,.lbl,#status{display:none}
+  #topbar{gap:5px}
+  #bottombar{gap:6px;flex-wrap:wrap;padding-bottom:14px}
+  #folioWrap,#folio{min-width:120px}
+  #folio{font-size:12.5px}
+  #track{width:100%;order:9}
+  #pct{width:auto}
+  #findIn{width:120px}
+  #toc{top:62px;bottom:120px}
+  #type{top:62px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="app" data-view="2" data-focus="0">
+
+  <header class="bar" id="topbar">
+    <div class="brand"><span class="brand-mark"></span>
+      <div><strong>Flipbook</strong><small>eBook Reader</small></div></div>
+    <label class="pill" title="Open a PDF or EPUB (O)">
+      <input type="file" id="file" accept=".pdf,.epub,application/pdf,application/epub+zip">
+      <span aria-hidden="true">＋</span><span class="lbl">Open book</span></label>
+    <span id="status" role="status" aria-live="polite">Your books stay on this device</span>
+    <span class="spacer"></span>
+    <div id="find">
+      <input id="findIn" type="search" placeholder="Search the book…" aria-label="Search the book">
+      <button class="ico" id="findPrev" title="Previous match" disabled>↑</button>
+      <button class="ico" id="findNext" title="Next match" disabled>↓</button>
+      <span id="findN"></span>
+    </div>
+    <span class="sep"></span>
+    <button class="ico" id="markBtn" title="Bookmark this page (B)" aria-pressed="false">☆</button>
+    <button class="ico" id="tocBtn" title="Contents (C)">☷</button>
+    <button class="pill" id="viewBtn" title="Page layout (P)"><span id="viewTxt">Auto</span></button>
+    <button class="ico" id="focusBtn" title="Focus mode (Shift+F)" aria-label="Focus mode" aria-pressed="false">
+      <svg class="focus-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="1.25">
+          <ellipse cx="12" cy="12" rx="3.8" ry="9"/>
+          <ellipse cx="12" cy="12" rx="3.8" ry="9" transform="rotate(30 12 12)"/>
+          <ellipse cx="12" cy="12" rx="3.8" ry="9" transform="rotate(60 12 12)"/>
+          <ellipse cx="12" cy="12" rx="3.8" ry="9" transform="rotate(90 12 12)"/>
+          <ellipse cx="12" cy="12" rx="3.8" ry="9" transform="rotate(120 12 12)"/>
+          <ellipse cx="12" cy="12" rx="3.8" ry="9" transform="rotate(150 12 12)"/>
+        </g>
+      </svg>
+    </button>
+    <button class="ico" id="fsBtn" title="Fullscreen (F)" aria-pressed="false">⤢</button>
+    <button class="ico" id="typeBtn" title="Type &amp; theme (T)">Aa</button>
+  </header>
+
+  <main id="stage">
+    <div id="grain"></div>
+    <div id="work"><i></i></div>
+
+    <section id="welcome">
+      <div class="mini" aria-hidden="true"></div>
+      <h1>Your books,<br>beautifully present.</h1>
+      <p>Open a PDF or EPUB and read it like a physical object — a real cover,
+         page depth you can see, animated turns, and a riffling track.</p>
+      <label class="go"><input type="file" id="file2" hidden
+        accept=".pdf,.epub,application/pdf,application/epub+zip">
+        Open your first book <span aria-hidden="true">→</span></label>
+      <a href="https://bio.yuvvrz.com" class="note"><span class="note">created by @yuvvrz</span></a>
+      <p style="margin:20px 0 0;font-size:11.5px;color:rgba(255,255,255,.62)">
+        <kbd>←</kbd> <kbd>→</kbd> turn · <kbd>C</kbd> contents · <kbd>T</kbd> type ·
+        <kbd>P</kbd> layout · <kbd>F</kbd> fullscreen</p>
+    </section>
+
+    <div id="deck">
+      <div id="book" data-state="shelf">
+        <div class="stack" id="stackL"></div>
+        <div class="stack" id="stackR"></div>
+        <span class="tally" id="tallyL">0 read</span>
+        <span class="tally" id="tallyR">0 left</span>
+        <div class="slot" id="slotL"></div>
+        <div class="slot" id="slotR"></div>
+        <div id="gutter"></div>
+        <div class="cast r"></div>
+        <div class="cast l"></div>
+      </div>
+    </div>
+    <div id="edges"></div>
+  </main>
+
+  <footer class="bar" id="bottombar">
+    <button class="nav" id="prev" title="Previous page (←)" aria-label="Previous page">‹</button>
+    <div id="folioWrap">
+      <button id="folio" title="Jump to a page">No book open</button>
+      <input id="folioIn" type="number" min="1" hidden aria-label="Jump to page">
+    </div>
+    <button class="nav" id="next" title="Next page (→)" aria-label="Next page">›</button>
+    <div id="track" role="slider" tabindex="0" aria-label="Riffle through the book"
+         aria-valuemin="1" aria-valuenow="1" aria-valuemax="1">
+      <div id="rail"><i id="railFill"></i></div>
+      <div id="railMarks"></div>
+      <div id="knob"></div>
+      <div id="peek"><canvas id="peekCv" hidden></canvas><div id="peekTxt"></div></div>
+    </div>
+    <span id="pct"></span>
+  </footer>
+
+  <aside class="panel" id="toc" aria-label="Contents">
+    <header><h2>Contents</h2><button class="x" data-close aria-label="Close">×</button></header>
+    <div class="body" id="tocBody"><p class="empty">No book open.</p></div>
+  </aside>
+
+  <aside class="panel" id="type" aria-label="Type and theme">
+    <header><h2>Type &amp; theme</h2><button class="x" data-close aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="field"><label>Theme</label><div class="chips" id="themes">
+        <button class="chip" data-theme-set="atelier">Atelier</button>
+        <button class="chip" data-theme-set="sepia">Sepia</button>
+        <button class="chip" data-theme-set="midnight">Midnight</button></div></div>
+      <div class="field"><label>Reading face</label><div class="chips" id="faces"></div>
+        <p class="empty" style="padding:8px 0 0;font-size:11px">Applies to EPUB. A PDF carries its own type.</p></div>
+      <div class="field"><label>Size</label><div class="step">
+        <button class="chip" data-step="size:-10">A−</button><output id="oSize">100%</output>
+        <button class="chip" data-step="size:10">A+</button></div></div>
+      <div class="field"><label>Line spacing</label><div class="step">
+        <button class="chip" data-step="lead:-0.08">≡−</button><output id="oLead">1.58</output>
+        <button class="chip" data-step="lead:0.08">≡+</button></div></div>
+      <div class="field"><label>Margins</label>
+        <input type="range" id="rMargin" min="0.6" max="1.7" step="0.05" value="1"></div>
+      <div class="field"><label>Alignment</label><div class="chips" id="aligns">
+        <button class="chip" data-align="start">Ragged</button>
+        <button class="chip" data-align="justify">Justified</button></div></div>
+      <div class="field"><label>Publisher styling</label><div class="chips">
+        <button class="chip" id="pubCss" aria-pressed="false">Use the book's own type</button></div></div>
+    </div>
+  </aside>
+
+  <button id="leave" title="Leave focus mode (Esc)" aria-label="Leave focus mode">×</button>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="measure" aria-hidden="true"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<script>
+"use strict";
+(() => {
+/* ══════════════════════════════════════════════════════════════════════════
+   FLIPBOOK
+
+   EPUB is paginated by this file, not by epub.js. Sections are parsed once and
+   injected into a shadow root, then laid out with CSS multi-column. That keeps
+   the publisher's own stylesheet encapsulated exactly as an iframe would, while
+   leaving the content as ordinary DOM — which is what lets the same page appear
+   on both faces of a turning leaf, and makes a page turn one transform on
+   content that is already laid out.
+
+   The book is always two panels wide. A single-page view is a window panned
+   across it rather than a different layout, so portrait and landscape are the
+   same book seen through a different frame.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const $ = (s) => document.querySelector(s);
+const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x != null) n.textContent = x; return n; };
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const raf = () => new Promise((r) => requestAnimationFrame(r));
+const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 90 }) : setTimeout(r, 0)));
+
+/* Anything that reaches into pdf.js or epub.js is fenced. A promise that never
+   settles is the commonest way a reader like this dies without a trace. */
+function fence(p, ms, fb = null) {
+  let t;
+  return Promise.race([
+    Promise.resolve(p).catch(() => fb),
+    new Promise((r) => { t = setTimeout(() => r(fb), ms); }),
+  ]).finally(() => clearTimeout(t));
+}
+const ok = (p, ms) => fence(Promise.resolve(p).then(() => true), ms, false);
+
+const Store = (() => {
+  let live = true, mem = {};
+  try { localStorage.setItem("__fb", "1"); localStorage.removeItem("__fb"); } catch { live = false; }
+  return {
+    live,
+    get(k, d) { try { const v = live ? localStorage.getItem(k) : mem[k]; return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { const s = JSON.stringify(v); if (live) localStorage.setItem(k, s); else mem[k] = s; } catch {} },
+  };
+})();
+
+let nErr = 0, nWarn = 0;
+const TAG = { ok: "[OK] ", add: "[+]  ", warn: "[!]  ", try: "[?]  ", err: "[ERR]" };
+function log(kind, msg) {
+  if (kind === "err") nErr++; else if (kind === "warn") nWarn++;
+  (kind === "err" ? console.error : kind === "warn" ? console.warn : console.info)("Flipbook " + (TAG[kind] || "") + " " + msg);
+}
+function status(msg, kind = "") { const s = $("#status"); s.textContent = msg; s.dataset.kind = kind; s.title = msg; }
+let toastT;
+function toast(kind, msg, ms = 3000) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.dataset.kind = kind === "err" ? "err" : kind === "warn" ? "warn" : "";
+  t.classList.add("show");
+  clearTimeout(toastT);
+  if (ms) toastT = setTimeout(() => t.classList.remove("show"), ms);
+  log(kind, msg);
+}
+
+const FACES = [
+  { id: "literata", name: "Literata", stack: '"Literata",Georgia,serif' },
+  { id: "newsreader", name: "Newsreader", stack: '"Newsreader",Georgia,serif' },
+  { id: "crimson", name: "Crimson", stack: '"Crimson Pro",Georgia,serif' },
+  { id: "dmsans", name: "DM Sans", stack: '"DM Sans",system-ui,sans-serif' },
+  { id: "atkinson", name: "Atkinson", stack: '"Atkinson Hyperlegible",Verdana,sans-serif' },
+  { id: "lexend", name: "Lexend", stack: '"Lexend",system-ui,sans-serif' },
+];
+
+const S = {
+  src: null, page: 2, side: 0, state: "shelf", animating: false, queue: 0,
+  riffling: false, resume: 0, key: "", wpp: 300,
+  orient: Store.get("flipbook.layout", "auto"),
+  theme: Store.get("flipbook.theme", "atelier"),
+  type: Object.assign({ font: "literata", size: 100, lead: 1.58, align: "start", margin: 1, publisher: false }, Store.get("flipbook.type", {})),
+  bookmarks: [],
+  hits: { needle: "", list: [], at: -1, cur: null },
+  reduce: matchMedia("(prefers-reduced-motion: reduce)").matches,
+};
+const G = { pageW: 520, pageH: 740, colW: 430, colH: 640, gap: 90, step: 520, mx: 45, my: 50, view: 2 };
+
+let _fonts = null;
+const fontsReady = () => (_fonts || (_fonts = fence(document.fonts ? document.fonts.ready : Promise.resolve(), 4000, null)));
+const dropFontCache = () => { _fonts = null; };
+
+const LAST = () => (S.src ? S.src.pageCount : 1);
+const spreadAnchor = (p) => (p <= 1 ? 2 : p % 2 === 0 ? p : p - 1);
+function currentPage() {
+  if (!S.src) return 1;
+  if (S.state === "closed-front") return 1;
+  if (S.state === "closed-back") return LAST();
+  return clamp(S.page + (G.view === 1 ? S.side : 0), 1, LAST());
+}
+
+/* ── geometry ──────────────────────────────────────────────────────────── */
+function decideView(w, h) {
+  if (S.orient === "portrait") return 1;
+  if (S.orient === "landscape") return 2;
+  return w / h >= 1.12 ? 2 : 1;
+}
+function relayout() {
+  const st = $("#stage");
+  /* clientWidth/clientHeight include padding. Sizing against those outer values
+     made the book taller than the stage's real content box, so the bottom bar
+     appeared to sit over it. Work only with the drawable inner rectangle. */
+  const cs = getComputedStyle(st);
+  const px = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const py = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const sw = Math.max(1, st.clientWidth - px), sh = Math.max(1, st.clientHeight - py);
+  const aspect = S.src ? S.src.aspect : 0.68;
+  G.view = decideView(sw, sh);
+  /* The single-page view is a window panned across a whole book, so the centred
+     page is inset to leave a deliberate strip of the facing page showing. Left to
+     chance that strip was 30px on a phone and 405px on a wide portrait-locked
+     window — which is why the facing page looked like it had vanished. */
+  const portraitInset = () => Math.max(0, Math.min(
+    Math.round(clamp(sw * 0.06, 8, 72)),
+    Math.floor((sw - 1) / 2)
+  ));
+  const peek = G.view === 1 ? portraitInset() : 0;
+  const room = G.view === 1 ? peek : Math.round(clamp(sw * 0.02, 10, 30));
+  const availW = Math.max(1, sw - room * 2), availH = Math.max(1, sh);
+  const fit = (n) => { let h = availH, w = h * aspect; if (w * n > availW) { w = availW / n; h = w / aspect; } return { w, h }; };
+  let { w: pageW, h: pageH } = fit(G.view);
+  if (G.view === 2 && pageW < 280 && S.orient === "auto") {
+    G.view = 1;
+    const p1 = portraitInset();
+    let h = availH, w = h * aspect;
+    const aw = Math.max(1, sw - p1 * 2);
+    if (w > aw) { w = aw; h = w / aspect; }
+    pageW = w; pageH = h;
+  }
+  /* Never impose a minimum larger than the viewport. A small locked portrait
+     window must scale the leaf down, not crop it. */
+  pageW = Math.max(1, Math.floor(pageW));
+  pageH = Math.max(1, Math.floor(pageH));
+  const mx = Math.round(pageW * 0.085 * S.type.margin);
+  const my = Math.round(pageH * 0.062 * S.type.margin);
+  Object.assign(G, { pageW, pageH, mx, my, colW: pageW - 2 * mx, colH: pageH - 2 * my, gap: 2 * mx, step: pageW });
+
+  const r = document.documentElement.style;
+  r.setProperty("--page-w", pageW + "px");
+  r.setProperty("--page-h", pageH + "px");
+  r.setProperty("--col-w", G.colW + "px");
+  r.setProperty("--col-h", G.colH + "px");
+  r.setProperty("--gap", G.gap + "px");
+  r.setProperty("--m-x", mx + "px");
+  r.setProperty("--m-y", my + "px");
+  r.setProperty("--peek", Math.max(0, Math.round((sw - pageW) / 2)) + "px");
+
+  $("#app").dataset.view = String(G.view);
+  const book = $("#book"), deck = $("#deck");
+  deck.style.height = pageH + "px";
+  book.style.width = pageW * 2 + "px";
+  book.style.height = pageH + "px";
+  $("#slotL").style.width = pageW + "px";
+  $("#slotR").style.width = pageW + "px";
+  const M = $("#measure");
+  M.style.width = pageW + "px"; M.style.height = pageH + "px";
+  applyDeck(0); paintDepth();
+}
+
+/* The book stays a full spread. In portrait, translate the exact distance from
+   the spread centre to the selected leaf centre; this remains correct at every
+   aspect ratio and after either toolbar changes height. */
+function deckShift() {
+  const leafCentre = G.pageW / 2;
+  if (S.state === "closed-front") return -leafCentre;
+  if (S.state === "closed-back") return leafCentre;
+  if (G.view === 1) return S.side === 0 ? leafCentre : -leafCentre;
+  return 0;
+}
+function applyDeck(ms) {
+  const d = $("#deck");
+  d.style.transitionDuration = (ms == null ? 740 : ms) + "ms";
+  d.style.transform = `translate3d(${deckShift()}px,0,0)`;
+}
+function setState(s, ms) { S.state = s; $("#book").dataset.state = s; applyDeck(ms); paintDepth(); }
+
+function paintDepth() {
+  const book = $("#book");
+  if (!S.src) { book.style.setProperty("--stack-l", "0px"); book.style.setProperty("--stack-r", "0px"); return; }
+  const N = Math.max(2, LAST()), p = currentPage();
+  const f = clamp((p - 1) / (N - 1), 0, 1), max = 22;
+  book.style.setProperty("--stack-l", 3 + Math.round(max * f) + "px");
+  book.style.setProperty("--stack-r", 3 + Math.round(max * (1 - f)) + "px");
+  $("#tallyL").textContent = Math.max(0, p - 1) + " read";
+  $("#tallyR").textContent = Math.max(0, N - p) + " left";
+}
+
+const layoutKey = () => `${G.colW}x${G.colH}|${S.type.font}|${S.type.size}|${S.type.lead}|${S.type.align}|${S.type.publisher ? 1 : 0}`;
+
+/* ── leaf styling ─────────────────────────────────────────────────────── */
+const LEAF_BASE = `
+:host{display:block;width:100%;height:100%;overflow:hidden;color:var(--ink);background:transparent}
+.flow{box-sizing:border-box;width:var(--col-w);height:var(--col-h);
+  column-width:var(--col-w);column-gap:var(--gap);column-fill:auto;
+  overflow:visible;orphans:2;widows:2;will-change:transform;
+  user-select:text;-webkit-user-select:text}
+.flow.measuring{overflow:hidden}
+`;
+/* Publisher sheets use !important freely, so the overrides need real specificity
+   rather than relying on cascade order. Repeating .flow is the cheapest way to
+   outrank a typical `.chapter p` rule. */
+function overrideCSS() {
+  const face = FACES.find((f) => f.id === S.type.font);
+  const fontRule = S.type.publisher || !face ? "" : `
+.flow.flow.flow,.flow.flow.flow *:not(pre):not(code):not(kbd):not(samp):not(tt)
+  {font-family:${face.stack}!important}`;
+  return `
+.flow.flow{font-size:${S.type.size}%!important;line-height:${S.type.lead}!important;
+  text-align:${S.type.align}!important;hyphens:auto;-webkit-hyphens:auto;color:var(--ink)}
+.flow.flow > body{margin:0!important;padding:0!important;width:auto!important;
+  height:auto!important;min-height:0!important;max-width:none!important;
+  background:transparent!important;column-count:auto!important;columns:auto!important;
+  display:block!important;position:static!important;float:none!important}
+.flow.flow > body > :first-child,.flow.flow > :first-child{margin-top:0!important}
+.flow.flow p,.flow.flow li,.flow.flow dd,.flow.flow blockquote
+  {line-height:${S.type.lead}!important;text-align:${S.type.align}!important;color:inherit}
+.flow.flow h1,.flow.flow h2,.flow.flow h3,.flow.flow h4,.flow.flow h5
+  {break-after:avoid;line-height:1.22;color:inherit}
+.flow.flow img,.flow.flow svg,.flow.flow image,.flow.flow video,.flow.flow figure
+  {max-width:100%!important;max-height:var(--col-h)!important;height:auto!important}
+.flow.flow table{max-width:100%!important;table-layout:fixed;word-break:break-word}
+.flow.flow a{color:inherit;text-decoration-color:rgba(150,120,60,.6)}
+.flow.flow pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.flow.flow hr{border:0;border-top:1px solid rgba(120,100,70,.3)}
+mark.hit{background:rgba(245,185,53,.42);color:inherit;border-radius:2px}
+mark.hit.on{background:rgba(245,185,53,.92);box-shadow:0 0 0 2px rgba(154,73,61,.45)}
+${fontRule}`;
+}
+async function awaitStyles(root) {
+  const links = [...root.querySelectorAll("link")].filter((l) => /stylesheet/i.test(l.getAttribute("rel") || ""));
+  if (!links.length) return;
+  await fence(Promise.all(links.map((l) => (l.sheet ? Promise.resolve() : new Promise((res) => {
+    l.addEventListener("load", res, { once: true });
+    l.addEventListener("error", res, { once: true });
+  })))), 4500, null);
+}
+
+const blankLeaf = () => { const w = el("div", "leaf"); w.append(el("div", "endpaper")); return w; };
+const pendingLeaf = (t) => { const w = el("div", "leaf"); w.append(el("div", "pending", t || "…")); return w; };
+const coverHint = (t) => el("div", "cover-hint", t);
+function hueOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+const rawText = (n) => { let o = ""; const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); while (w.nextNode()) o += w.currentNode.nodeValue; return o; };
+
+function findRange(root, needle, occurrence) {
+  const nodes = [];
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (w.nextNode()) nodes.push(w.currentNode);
+  const hay = nodes.map((n) => n.nodeValue).join("").toLowerCase();
+  const nd = needle.toLowerCase();
+  let idx = -1;
+  for (let k = 0; k <= occurrence; k++) { idx = hay.indexOf(nd, idx < 0 ? 0 : idx + Math.max(1, nd.length)); if (idx < 0) return null; }
+  let acc = 0;
+  for (const n of nodes) {
+    const len = n.nodeValue.length;
+    if (idx < acc + len) {
+      const r = document.createRange();
+      r.setStart(n, idx - acc);
+      r.setEnd(n, Math.min(len, idx - acc + nd.length));
+      return r;
+    }
+    acc += len;
+  }
+  return null;
+}
+/* Search and highlighting use the same logical text stream. PDF.js renders one
+   span per text item, so a separator is inserted between spans just as it is in
+   the PDF search index. A match may cross several spans; each visible piece is
+   marked and all pieces of the current match receive the brighter treatment. */
+function markLeaf(root, needle, activeOcc = -1, separator = "") {
+  if (!needle || !root) return;
+  const nd = needle.toLowerCase();
+  const nodes = [];
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (w.nextNode()) if (w.currentNode.nodeValue) nodes.push(w.currentNode);
+  if (!nodes.length) return;
+  const starts = [];
+  let hay = "";
+  for (let i = 0; i < nodes.length; i++) {
+    if (i) hay += separator;
+    starts.push(hay.length);
+    hay += nodes[i].nodeValue;
+  }
+  const low = hay.toLowerCase(), matches = [];
+  let at = -1;
+  while ((at = low.indexOf(nd, at < 0 ? 0 : at + Math.max(1, nd.length))) >= 0)
+    matches.push({ start: at, end: at + nd.length, index: matches.length });
+  if (!matches.length) return;
+  for (let ni = 0; ni < nodes.length; ni++) {
+    const n = nodes[ni], txt = n.nodeValue, ns = starts[ni], ne = ns + txt.length;
+    const pieces = matches.filter((m) => m.start < ne && m.end > ns)
+      .map((m) => ({ start: Math.max(0, m.start - ns), end: Math.min(txt.length, m.end - ns), index: m.index }));
+    if (!pieces.length) continue;
+    const frag = document.createDocumentFragment();
+    let pos = 0;
+    for (const p of pieces) {
+      if (p.start > pos) frag.append(document.createTextNode(txt.slice(pos, p.start)));
+      frag.append(el("mark", "hit" + (p.index === activeOcc ? " on" : ""), txt.slice(p.start, p.end)));
+      pos = p.end;
+    }
+    if (pos < txt.length) frag.append(document.createTextNode(txt.slice(pos)));
+    n.parentNode && n.parentNode.replaceChild(frag, n);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EPUB SOURCE
+   ══════════════════════════════════════════════════════════════════════════ */
+let mLock = Promise.resolve();
+function withMeasure(fn) { const run = mLock.then(fn, fn); mLock = run.then(() => {}, () => {}); return run; }
+
+async function makeEpubSource(buf, label) {
+  if (!window.ePub || !window.JSZip) throw new Error("The EPUB libraries did not load. Check the network, then reload.");
+  const book = window.ePub(buf, { replacements: "blobUrl" });
+  if (!(await ok(book.ready, 30000)))
+    throw new Error("This EPUB could not be unpacked. Its container or OPF is likely malformed.");
+  /* book.ready settles before resource rewriting finishes; book.opened waits for
+     it. Skip this and section.render() returns unresolved image and stylesheet
+     paths, so pages measure short and pictures never arrive. */
+  if (!(await ok(book.opened, 30000))) log("warn", "Resource rewriting did not finish; some images may be missing.");
+
+  const meta = book.packaging?.metadata || {};
+  const title = meta.title || label.replace(/\.epub$/i, "");
+  const creator = meta.creator || meta.author || "Unknown author";
+  const publisher = meta.publisher || "";
+  const spine = (book.spine?.spineItems || []).filter((s) => s && s.href);
+  if (!spine.length) throw new Error("This EPUB has an empty spine — there is nothing to read.");
+
+  const SEC = spine.map((item, i) => ({
+    i, item, href: String(item.href || "").split("#")[0],
+    body: null, headNodes: [], raw: "", words: 0, pages: 0, key: "", skip: false, label: "", _loading: null,
+  }));
+  const OFF = new Array(SEC.length).fill(0);
+  const byHref = new Map();
+  SEC.forEach((s) => { if (!byHref.has(s.href)) byHref.set(s.href, s.i); });
+  let coverUrl = "", contentPages = 0, token = 0;
+
+  async function findCover() {
+    const direct = await fence(book.coverUrl(), 6000, null);
+    if (direct) return direct;
+    const man = book.packaging?.manifest || {};
+    for (const it of Object.values(man)) {
+      if (!/^image\//.test(it?.type || "")) continue;
+      if (!/cover/i.test(`${it.id || ""} ${it.href || ""}`)) continue;
+      const u = await fence(Promise.resolve().then(() => book.archive.createUrl(it.href)), 4000, null);
+      if (u) return u;
+    }
+    return "";
+  }
+  async function loadSection(i) {
+    const sec = SEC[i];
+    if (sec.body) return sec;
+    if (sec._loading) return sec._loading;
+    sec._loading = (async () => {
+      const xhtml = await fence(sec.item.render(book.load.bind(book)), 25000, "");
+      if (!xhtml) { sec.body = el("div"); log("warn", `Section ${i + 1} did not load.`); return sec; }
+      let doc = null;
+      try { doc = new DOMParser().parseFromString(xhtml, "application/xhtml+xml"); } catch {}
+      if (!doc || doc.querySelector("parsererror")) { try { doc = new DOMParser().parseFromString(xhtml, "text/html"); } catch {} }
+      if (!doc) { sec.body = el("div"); return sec; }
+      sec.headNodes = doc.head ? [...doc.head.children].filter((n) => n.tagName === "STYLE" ||
+        (n.tagName === "LINK" && /stylesheet/i.test(n.getAttribute("rel") || ""))) : [];
+      sec.body = doc.body || doc.documentElement || el("div");
+      sec.raw = rawText(sec.body);
+      sec.words = (sec.raw.match(/\S+/g) || []).length;
+      try { sec.item.unload(); } catch {}
+      return sec;
+    })();
+    return sec._loading;
+  }
+  function buildLeaf(i, opts = {}) {
+    const sec = SEC[i];
+    const wrap = el("div", "leaf"), vp = el("div", "leaf-vp"), host = el("div", "leaf-shadow");
+    vp.append(host); wrap.append(vp);
+    const root = host.attachShadow({ mode: "open" });
+    const base = el("style"); base.textContent = LEAF_BASE; root.append(base);
+    for (const n of sec.headNodes) { try { root.append(document.importNode(n, true)); } catch {} }
+    const flow = el("div", "flow" + (opts.measuring ? " measuring" : ""));
+    /* The <body> element is kept rather than unwrapped, because publisher sheets
+       lean on `body {...}` and `body.chapter p {...}` constantly and a type
+       selector matches a body node wherever it sits. Its box is neutralised. */
+    if (sec.body) flow.append(document.importNode(sec.body, true));
+    root.append(flow);
+    const over = el("style"); over.textContent = overrideCSS(); root.append(over);
+    wrap._flow = flow; wrap._root = root; wrap._sec = i;
+    return wrap;
+  }
+  async function measureSection(i) {
+    const sec = await loadSection(i);
+    if (sec.skip) return 0;
+    const key = layoutKey();
+    if (sec.pages && sec.key === key) return sec.pages;
+    const n = await withMeasure(async () => {
+      const M = $("#measure"), leaf = buildLeaf(i, { measuring: true });
+      M.replaceChildren(leaf);
+      await awaitStyles(leaf._root);
+      await fontsReady();
+      await raf();
+      /* One column per page and a gap of twice the side margin puts the column
+         pitch exactly at the page width, so the count is scrollWidth / pageW. */
+      const sw = leaf._flow.scrollWidth;
+      M.replaceChildren();
+      let v = Math.round(sw / Math.max(1, G.step));
+      if (!isFinite(v) || v < 1) v = 1;
+      return Math.min(v, 900);
+    });
+    sec.pages = n; sec.key = key;
+    return n;
+  }
+  function recount() {
+    let acc = 0, done = 0;
+    for (let i = 0; i < SEC.length; i++) { OFF[i] = acc; acc += SEC[i].pages || 0; if (SEC[i].pages || SEC[i].skip) done++; }
+    contentPages = acc;
+    /* The last page has to be a recto so it can be turned to shut the book, so
+       a blank leaf is slipped in when the parity is wrong. */
+    src.pageCount = contentPages % 2 === 1 ? contentPages + 2 : contentPages + 3;
+    src.padded = contentPages % 2 === 0;
+    src.pageCountKnown = done === SEC.length;
+    const w = SEC.reduce((t, s) => t + s.words, 0);
+    if (contentPages > 0 && w > 0) S.wpp = Math.max(60, Math.round(w / contentPages));
+  }
+  function locate(ci) {
+    for (let i = 0; i < SEC.length; i++) { const p = SEC[i].pages || 0; if (p && ci < OFF[i] + p) return { sec: i, p: clamp(ci - OFF[i], 0, p - 1) }; }
+    for (let i = SEC.length - 1; i >= 0; i--) if (SEC[i].pages) return { sec: i, p: SEC[i].pages - 1 };
+    return { sec: 0, p: 0 };
+  }
+  const globalOf = (sec, p) => 2 + OFF[sec] + p;
+
+  function coverLeaf() {
+    const w = el("div", "leaf"), c = el("div", "cover");
+    if (coverUrl) { const img = el("img"); img.src = coverUrl; img.alt = "Front cover"; c.append(img); }
+    else {
+      const hue = hueOf(title);
+      c.style.background = `linear-gradient(150deg,hsl(${hue} 30% 28%),hsl(${(hue + 24) % 360} 38% 15%))`;
+      const t = el("div", "cover-type");
+      t.append(el("h1", null, title), el("div", "cover-rule"), el("p", null, creator));
+      c.append(t, el("div", "cover-imprint", "FLIPBOOK"));
+    }
+    w.append(c); return w;
+  }
+  function colophonLeaf() {
+    const w = el("div", "leaf"), c = el("div", "colophon"), box = el("div");
+    box.append(el("b", null, title));
+    const bits = [creator]; if (publisher) bits.push(publisher);
+    if (meta.pubdate) bits.push(String(meta.pubdate).slice(0, 4));
+    box.append(el("div", null, bits.filter(Boolean).join(" · ")));
+    box.append(el("div", null, `${contentPages} pages in this setting`));
+    c.append(box); w.append(c); return w;
+  }
+  async function surface(n, o = {}) {
+    const N = src.pageCount;
+    if (n <= 1) return coverLeaf();
+    if (n >= N) return colophonLeaf();
+    if (src.padded && n === N - 1) return blankLeaf();
+    const { sec, p } = locate(n - 2);
+    await loadSection(sec);
+    if (!SEC[sec].pages || SEC[sec].key !== layoutKey()) await measureSection(sec);
+    const leaf = buildLeaf(sec);
+    leaf._flow.style.transform = `translateX(${-p * G.step}px)`;
+    if (S.hits.needle) markLeaf(leaf._flow, S.hits.needle, S.hits.cur && S.hits.cur.sec === sec ? S.hits.cur.occ : -1);
+    leaf.append(el("div", "runhead", SEC[sec].label || title), el("div", "folio", String(n - 1)));
+    return leaf;
+  }
+  async function paginate(onProgress) {
+    const my = ++token;
+    await loadSection(0);
+    const s0 = SEC[0];
+    /* The cover XHTML is nearly always an image-only page duplicating the cover
+       leaf, so it is dropped from the reading order rather than shown twice. */
+    if (s0.body && (s0.raw || "").trim().length < 60 && s0.body.querySelector("img,svg,image")) { s0.skip = true; s0.pages = 0; }
+    for (let i = 0; i < SEC.length; i++) {
+      if (my !== token) return false;
+      try { await measureSection(i); } catch { log("warn", `Section ${i + 1} could not be measured.`); SEC[i].pages = 1; }
+      recount();
+      onProgress && onProgress(i + 1, SEC.length);
+      if (i % 3 === 2) await idle();
+    }
+    recount();
+    return my === token;
+  }
+  function invalidate() { token++; SEC.forEach((s) => { s.pages = 0; s.key = ""; }); }
+  function anchor(page) {
+    if (page <= 1) return { sec: -1, frac: 0 };
+    if (page >= src.pageCount) return { sec: -2, frac: 1 };
+    const { sec, p } = locate(page - 2);
+    return { sec, frac: SEC[sec].pages ? p / SEC[sec].pages : 0 };
+  }
+  async function fromAnchor(a) {
+    if (!a || a.sec === -1) return 1;
+    if (a.sec === -2) return src.pageCount;
+    for (let i = 0; i <= a.sec && i < SEC.length; i++) await measureSection(i);
+    recount();
+    const pages = SEC[a.sec].pages || 1;
+    return globalOf(a.sec, clamp(Math.round(a.frac * pages), 0, pages - 1));
+  }
+  async function columnOf(secIdx, getRange) {
+    await loadSection(secIdx);
+    return withMeasure(async () => {
+      const M = $("#measure"), leaf = buildLeaf(secIdx);
+      M.replaceChildren(leaf);
+      await awaitStyles(leaf._root);
+      await fontsReady();
+      await raf();
+      let p = 0;
+      try {
+        const r = getRange(leaf._flow);
+        if (r) {
+          const fr = leaf._flow.getBoundingClientRect(), rr = r.getBoundingClientRect();
+          p = Math.max(0, Math.round((rr.left - fr.left) / Math.max(1, G.step)));
+        }
+      } catch {}
+      M.replaceChildren();
+      return clamp(p, 0, (SEC[secIdx].pages || 1) - 1);
+    });
+  }
+  async function outline() {
+    const nav = book.navigation || (await fence(book.loaded?.navigation, 8000, null));
+    const out = [{ id: "cover", label: "Front cover", page: 1, depth: 0 }];
+    const walk = (items, depth) => {
+      for (const it of items || []) {
+        const href = String(it.href || it.url || "");
+        const base = href.split("#")[0].replace(/^\.\//, "");
+        let si = byHref.has(base) ? byHref.get(base) : null;
+        if (si == null) for (const [k, v] of byHref) { if (k.endsWith(base) || base.endsWith(k)) { si = v; break; } }
+        const lab = (it.label || "").replace(/\s+/g, " ").trim() || "Untitled";
+        if (si != null && !SEC[si].label) SEC[si].label = lab;
+        out.push({ id: "e" + out.length, label: lab, sec: si, frag: href.split("#")[1] || "", depth });
+        walk(it.subitems || it.items, depth + 1);
+      }
+    };
+    walk((nav && nav.toc) || [], 0);
+    out.push({ id: "colophon", label: "Colophon", page: -1, depth: 0 });
+    return out;
+  }
+  async function pageOfEntry(entry) {
+    if (entry.page === 1) return 1;
+    if (entry.page === -1) return src.pageCount;
+    if (entry.sec == null) return null;
+    await measureSection(entry.sec); recount();
+    if (!entry.frag) return globalOf(entry.sec, 0);
+    const p = await columnOf(entry.sec, (flow) => {
+      const t = flow.querySelector(`#${CSS.escape(entry.frag)}, [name="${CSS.escape(entry.frag)}"]`);
+      if (!t) return null;
+      const r = document.createRange(); r.selectNode(t); return r;
+    });
+    return globalOf(entry.sec, p ?? 0);
+  }
+  async function search(q) {
+    const nd = q.toLowerCase(), out = [];
+    for (let i = 0; i < SEC.length; i++) {
+      if (SEC[i].skip) continue;
+      await loadSection(i);
+      const hay = (SEC[i].raw || "").toLowerCase();
+      let at = -1, occ = 0;
+      while ((at = hay.indexOf(nd, at < 0 ? 0 : at + Math.max(1, nd.length))) >= 0) {
+        const s = Math.max(0, at - 42), e = Math.min(hay.length, at + nd.length + 52);
+        out.push({ sec: i, occ, label: SEC[i].label || title, snippet: "…" + SEC[i].raw.slice(s, e).replace(/\s+/g, " ").trim() + "…" });
+        occ++;
+        if (out.length > 400) return out;
+      }
+      if (i % 6 === 5) await idle();
+    }
+    return out;
+  }
+  async function pageOfHit(hit) {
+    await measureSection(hit.sec); recount();
+    const p = await columnOf(hit.sec, (flow) => findRange(flow, S.hits.needle, hit.occ));
+    return globalOf(hit.sec, p ?? 0);
+  }
+
+  coverUrl = await findCover();
+  if (!coverUrl) log("warn", "No cover image found; using a typeset cover.");
+  await loadSection(0);
+  await measureSection(0);
+
+  const src = {
+    kind: "epub", label, title, creator, aspect: 0.66,
+    pageCount: 3, padded: false, pageCountKnown: false,
+    surface, paginate, invalidate, anchor, fromAnchor, outline, pageOfEntry, search, pageOfHit,
+    thumb: null, hitKey: (h) => ({ sec: h.sec, occ: h.occ }),
+    sectionLabel(n) { if (n <= 1) return "Front cover"; if (n >= src.pageCount) return "Colophon"; const { sec } = locate(n - 2); return SEC[sec].label || title; },
+    destroy() { token++; try { book.destroy(); } catch {} if (coverUrl) { try { URL.revokeObjectURL(coverUrl); } catch {} } },
+  };
+  recount();
+  return src;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PDF SOURCE
+   ══════════════════════════════════════════════════════════════════════════ */
+async function makePdfSource(buf, label) {
+  const pdfjs = window["pdfjs-dist/build/pdf"] || window.pdfjsLib;
+  if (!pdfjs) throw new Error("PDF.js did not load. Check the network, then reload.");
+  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+  const doc = await fence(pdfjs.getDocument({ data: buf }).promise, 45000, null);
+  if (!doc) throw new Error("This PDF could not be parsed. It may be corrupt or password protected.");
+  const M = doc.numPages;
+  const padded = M % 2 === 0;
+  const first = await doc.getPage(1), vp1 = first.getViewport({ scale: 1 });
+  let title = label.replace(/\.pdf$/i, ""), creator = "";
+  try {
+    const md = await fence(doc.getMetadata(), 6000, null);
+    if (md?.info?.Title) title = String(md.info.Title).trim() || title;
+    if (md?.info?.Author) creator = String(md.info.Author).trim();
+  } catch {}
+
+  const big = new Map(), small = new Map(), tasks = new Map(), texts = new Map();
+  const cloneCv = (s) => { const c = document.createElement("canvas"); c.width = s.width; c.height = s.height; c.getContext("2d").drawImage(s, 0, 0); return c; };
+  async function rasterise(n, scale) {
+    const pg = await doc.getPage(n), vp = pg.getViewport({ scale });
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.ceil(vp.width)); cv.height = Math.max(1, Math.ceil(vp.height));
+    const ctx = cv.getContext("2d", { alpha: false });
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+    await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+    return cv;
+  }
+  function baseCanvas(n) {
+    if (big.has(n)) return Promise.resolve(big.get(n));
+    if (tasks.has(n)) return tasks.get(n);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const scale = clamp((G.pageW * dpr) / vp1.width, 0.6, 3);
+    const p = rasterise(n, scale)
+      .then((cv) => { if (big.size > 34) big.delete(big.keys().next().value); big.set(n, cv); tasks.delete(n); return cv; })
+      .catch((e) => { tasks.delete(n); throw e; });
+    tasks.set(n, p);
+    return p;
+  }
+  function getText(n) { if (!texts.has(n)) texts.set(n, doc.getPage(n).then((p) => p.getTextContent())); return texts.get(n); }
+  function preload(n) { for (let i = Math.max(1, n - 4); i <= Math.min(M, n + 6); i++) if (!big.has(i) && !tasks.has(i)) baseCanvas(i).catch(() => {}); }
+
+  async function surface(n, o = {}) {
+    if (n < 1 || n > M) return blankLeaf();
+    const leaf = el("div", "leaf");
+    let base;
+    try { base = await baseCanvas(n); } catch { leaf.append(el("div", "pending", "Page " + n + " would not render")); return leaf; }
+    const pg = await doc.getPage(n), pvp = pg.getViewport({ scale: 1 });
+    const fit = el("div", "pdf-fit");
+    fit.style.width = pvp.width + "px"; fit.style.height = pvp.height + "px";
+    const cv = cloneCv(base); cv.className = "pdf-cv";
+    fit.append(cv);
+    leaf.append(fit);
+    if (!o.fast) {
+      const tl = el("div", "tlayer");
+      tl.style.width = pvp.width + "px"; tl.style.height = pvp.height + "px";
+      /* pdf.js writes every span's left, top and font-size as
+         calc(var(--scale-factor) * Npx). With the variable unset all three
+         declarations are invalid, every span collapses onto the origin, and a
+         drag-selection copies whatever text happens to be stacked there. */
+      tl.style.setProperty("--scale-factor", "1");
+      fit.append(tl);
+      try {
+        const tc = await getText(n);
+        const task = pdfjs.renderTextLayer({ textContentSource: tc, container: tl, viewport: pvp, textDivs: [] });
+        /* Waiting for the task matters: an unfinished layer is a half-populated
+           one, and this element gets cloned onto a turning leaf. */
+        if (task?.promise) await fence(task.promise, 9000, null);
+        else if (task?.then) await fence(task, 9000, null);
+        /* Some pdf.js builds settle the render task just before the final DOM
+           batch is committed. Two frames make highlighting deterministic. */
+        await raf(); await raf();
+        tl.append(el("div", "eoc"));
+        if (S.hits.needle) markLeaf(tl, S.hits.needle, S.hits.cur && S.hits.cur.page === n ? S.hits.cur.occ : -1, " ");
+        tl.classList.add("live");
+      } catch { log("warn", "Text layer failed on page " + n); }
+      preload(n);
+    }
+    /* Page boxes vary inside one PDF, so fit and letterbox rather than stretch. */
+    const ro = new ResizeObserver(([e]) => {
+      const w = e.contentRect.width, h = e.contentRect.height;
+      if (!w || !h) return;
+      const s = Math.min(w / pvp.width, h / pvp.height);
+      fit.style.transform = `scale(${s})`;
+      fit.style.left = (w - pvp.width * s) / 2 + "px";
+      fit.style.top = (h - pvp.height * s) / 2 + "px";
+    });
+    ro.observe(leaf); leaf._ro = ro;
+    return leaf;
+  }
+  async function thumb(n) {
+    if (n < 1 || n > M) return null;
+    if (small.has(n)) return cloneCv(small.get(n));
+    const cv = await rasterise(n, clamp(150 / vp1.width, 0.06, 0.6));
+    if (small.size > 80) small.delete(small.keys().next().value);
+    small.set(n, cv);
+    return cloneCv(cv);
+  }
+  async function outline() {
+    const raw = (await fence(doc.getOutline(), 10000, null)) || [];
+    const out = [];
+    const walk = async (items, depth) => {
+      for (const it of items || []) {
+        let page = null;
+        try {
+          const dest = typeof it.dest === "string" ? await doc.getDestination(it.dest) : it.dest;
+          const ref = dest && dest[0];
+          if (ref && typeof ref === "object") page = (await doc.getPageIndex(ref)) + 1;
+          else if (typeof ref === "number") page = ref + 1;
+        } catch {}
+        out.push({ id: "p" + out.length, label: (it.title || "Untitled").replace(/\s+/g, " ").trim(), page, depth });
+        await walk(it.items, depth + 1);
+      }
+    };
+    await walk(raw, 0);
+    return out;
+  }
+  async function search(q) {
+    const nd = q.toLowerCase(), out = [];
+    for (let n = 1; n <= M; n++) {
+      let txt = "";
+      try { txt = (await getText(n)).items.map((i) => i.str).filter(Boolean).join(" "); } catch {}
+      const hay = txt.toLowerCase();
+      let at = -1, occ = 0;
+      while ((at = hay.indexOf(nd, at < 0 ? 0 : at + Math.max(1, nd.length))) >= 0) {
+        const s = Math.max(0, at - 42), e = Math.min(hay.length, at + nd.length + 52);
+        out.push({ page: n, occ, label: "Page " + n, snippet: "…" + txt.slice(s, e).replace(/\s+/g, " ").trim() + "…" });
+        occ++;
+        if (out.length > 400) return out;
+      }
+      if (n % 8 === 0) await idle();
+    }
+    return out;
+  }
+  return {
+    kind: "pdf", label, title, creator, aspect: vp1.width / vp1.height,
+    pageCount: padded ? M + 1 : M, padded, pageCountKnown: true,
+    surface, thumb, outline, search,
+    pageOfEntry: (e) => e.page ?? null,
+    pageOfHit: (h) => h.page,
+    hitKey: (h) => ({ page: h.page, occ: h.occ }),
+    invalidate() { big.clear(); tasks.clear(); },
+    sectionLabel: (n) => (n > M ? "Back cover" : "Page " + n),
+    destroy() { try { doc.destroy(); } catch {} big.clear(); small.clear(); tasks.clear(); texts.clear(); },
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   READER
+   ══════════════════════════════════════════════════════════════════════════ */
+function disposeSlot(slot) { for (const ch of slot.children) if (ch._ro) { try { ch._ro.disconnect(); } catch {} } }
+function setSlot(slot, leaf) { disposeSlot(slot); slot.replaceChildren(leaf); }
+function setSlotEl(slot, leaf) { disposeSlot(slot); slot.replaceChildren(leaf); }
+function clearSlots() { disposeSlot($("#slotL")); disposeSlot($("#slotR")); $("#slotL").replaceChildren(); $("#slotR").replaceChildren(); }
+function clearFlippers() { $("#book").querySelectorAll(".flipper").forEach((n) => n.remove()); }
+
+async function surf(n, o) {
+  if (!S.src) return blankLeaf();
+  if (n < 1 || n > S.src.pageCount) return blankLeaf();
+  try { return (await fence(S.src.surface(n, o || {}), 25000, null)) || pendingLeaf("…"); }
+  catch { log("warn", "Page " + n + " did not render."); return pendingLeaf("—"); }
+}
+async function paint(o = {}) {
+  if (!S.src || S.state !== "open") return;
+  /* Both leaves are always mounted, including in the single-page view. That is
+     what lets the window pan across the book instead of the other page vanishing. */
+  const [a, b] = await Promise.all([surf(S.page, o), surf(S.page + 1, o)]);
+  setSlot($("#slotL"), a); setSlot($("#slotR"), b);
+  syncChrome();
+}
+
+function backBoard() {
+  const w = el("div", "leaf"), c = el("div", "cover back"), t = el("div", "cover-type");
+  t.append(el("h1", null, S.src?.title || "Flipbook"), el("div", "cover-rule"), el("p", null, S.src?.creator || ""));
+  c.append(t, el("div", "cover-imprint", "FLIPBOOK"));
+  w.append(c); return w;
+}
+async function showClosedFront() {
+  S.page = 2; S.side = 0;
+  clearFlippers(); clearSlots();
+  setState("closed-front");
+  const f = el("div", "flipper right"); f.id = "coverLeaf"; f.style.transition = "none";
+  const fr = el("div", "face"); fr.append(await surf(1, {}), coverHint("Open cover →"), el("div", "sheen"));
+  const bk = el("div", "face back"); bk.append(el("div", "endpaper"));
+  f.append(fr, bk);
+  $("#book").append(f);
+  syncChrome();
+}
+async function showClosedBack() {
+  S.page = spreadAnchor(LAST()); S.side = 1;
+  clearFlippers(); clearSlots();
+  setState("closed-back");
+  const f = el("div", "flipper left"); f.id = "coverLeaf"; f.style.transition = "none";
+  const fr = el("div", "face"); fr.append(backBoard(), coverHint("← Open back cover"), el("div", "sheen"));
+  const bk = el("div", "face back"); bk.append(el("div", "endpaper"));
+  f.append(fr, bk);
+  $("#book").append(f);
+  syncChrome();
+}
+
+/* One helper drives every leaf rotation. The exposed slot is swapped while it is
+   still hidden behind the leaf, and the covered slot only after the leaf has
+   landed on top of it. That ordering is what removes the flash of the next page
+   appearing before the turn has played. */
+async function runFlip(o) {
+  const book = $("#book"), f = el("div", "flipper " + o.side);
+  book.style.setProperty("--flip-ms", o.ms + "ms");
+  f.style.setProperty("--flip-ms", o.ms + "ms");
+  const fr = el("div", "face"); fr.append(o.front, el("div", "sheen"));
+  const bk = el("div", "face back"); bk.append(o.back, el("div", "sheen"));
+  f.append(fr, bk);
+  book.append(f);
+  book.classList.add("turning");
+  if (o.exposed) await o.exposed();
+  if (o.mid) o.mid();
+  await raf();
+  f.classList.add("lit");
+  void f.offsetWidth;
+  f.classList.add(o.side === "right" ? "go-next" : "go-prev");
+  await sleep(o.ms + 20);
+  if (o.covered) await o.covered();
+  f.remove();
+  book.classList.remove("turning");
+}
+
+async function openFront() {
+  if (S.state !== "closed-front" || S.animating || !S.src) return;
+  S.animating = true;
+  const ms = S.reduce ? 1 : 820, book = $("#book"), f = $("#coverLeaf");
+  const p2 = await surf(2, {});
+  if (f) f.querySelector(".face.back").replaceChildren(p2, el("div", "sheen"));
+  S.page = 2; S.side = 0;
+  setSlot($("#slotR"), await surf(3, {}));
+  /* Paper on both panels for the whole rotation. In the single-page view the
+     window can see this side, and an empty panel reads as a rendering fault. */
+  setSlot($("#slotL"), blankLeaf());
+  book.classList.add("turning");
+  setState("open", ms);
+  if (f) {
+    book.style.setProperty("--flip-ms", ms + "ms");
+    f.style.setProperty("--flip-ms", ms + "ms");
+    f.style.transition = `transform ${ms}ms var(--ease)`;
+    await raf(); await raf();
+    f.classList.add("lit");
+    void f.offsetWidth;
+    f.classList.add("go-next");
+    await sleep(ms + 30);
+    setSlotEl($("#slotL"), p2);
+    f.remove();
+  } else { setSlotEl($("#slotL"), p2); }
+  book.classList.remove("turning");
+  S.animating = false;
+  syncChrome(); save(); drainQueue();
+}
+async function closeFront() {
+  if (S.state !== "open" || S.animating || !S.src) return;
+  S.animating = true;
+  const ms = S.reduce ? 1 : 820, book = $("#book");
+  const front = $("#slotL").firstElementChild || await surf(2, {});
+  const back = await surf(1, {});
+  const f = el("div", "flipper left");
+  const fr = el("div", "face"); fr.append(front, el("div", "sheen"));
+  const bk = el("div", "face back"); bk.append(back, coverHint("Open cover →"), el("div", "sheen"));
+  f.append(fr, bk);
+  book.append(f);
+  book.classList.add("turning");
+  setState("closed-front", ms);
+  book.style.setProperty("--flip-ms", ms + "ms");
+  f.style.setProperty("--flip-ms", ms + "ms");
+  f.style.transition = `transform ${ms}ms var(--ease)`;
+  await raf(); await raf();
+  f.classList.add("lit");
+  void f.offsetWidth;
+  f.classList.add("go-prev");
+  await sleep(ms + 30);
+  book.classList.remove("turning");
+  f.remove();
+  await showClosedFront();
+  S.animating = false; save(); drainQueue();
+}
+async function closeBack() {
+  if (S.state !== "open" || S.animating || !S.src) return;
+  S.animating = true;
+  const ms = S.reduce ? 1 : 820, book = $("#book"), last = LAST();
+  const front = $("#slotR").firstElementChild || await surf(last, {});
+  const f = el("div", "flipper right");
+  const fr = el("div", "face"); fr.append(front, el("div", "sheen"));
+  const bk = el("div", "face back"); bk.append(backBoard(), coverHint("← Open back cover"), el("div", "sheen"));
+  f.append(fr, bk);
+  book.append(f);
+  book.classList.add("turning");
+  setState("closed-back", ms);
+  book.style.setProperty("--flip-ms", ms + "ms");
+  f.style.setProperty("--flip-ms", ms + "ms");
+  f.style.transition = `transform ${ms}ms var(--ease)`;
+  await raf(); await raf();
+  f.classList.add("lit");
+  void f.offsetWidth;
+  f.classList.add("go-next");
+  await sleep(ms + 30);
+  book.classList.remove("turning");
+  f.remove();
+  await showClosedBack();
+  S.animating = false; save(); drainQueue();
+}
+async function openBack() {
+  if (S.state !== "closed-back" || S.animating || !S.src) return;
+  S.animating = true;
+  const ms = S.reduce ? 1 : 820, book = $("#book"), f = $("#coverLeaf");
+  const last = LAST(), anchor = spreadAnchor(last);
+  const pl = await surf(last, {});
+  if (f) f.querySelector(".face.back").replaceChildren(pl, el("div", "sheen"));
+  S.page = anchor; S.side = 1;
+  setSlot($("#slotL"), await surf(anchor, {}));
+  setSlot($("#slotR"), blankLeaf());
+  book.classList.add("turning");
+  setState("open", ms);
+  if (f) {
+    book.style.setProperty("--flip-ms", ms + "ms");
+    f.style.setProperty("--flip-ms", ms + "ms");
+    f.style.transition = `transform ${ms}ms var(--ease)`;
+    await raf(); await raf();
+    f.classList.add("lit");
+    void f.offsetWidth;
+    f.classList.add("go-prev");
+    await sleep(ms + 30);
+    setSlotEl($("#slotR"), pl);
+    f.remove();
+  } else { setSlotEl($("#slotR"), pl); }
+  book.classList.remove("turning");
+  S.animating = false;
+  syncChrome(); save(); drainQueue();
+}
+
+async function flipPage(dir) {
+  S.animating = true;
+  const bl = Math.abs(S.queue);
+  /* Turning faster as the backlog grows is what makes a held arrow key feel like
+     thumbing through rather than queueing animations. */
+  const ms = S.reduce ? 1 : bl > 3 ? 150 : bl > 1 ? 280 : 620;
+  const fast = bl > 0, isNext = dir > 0, target = S.page + dir * 2;
+  if (isNext) {
+    const front = $("#slotR").firstElementChild || await surf(S.page + 1, { fast });
+    const back = await surf(target, { fast });
+    await runFlip({
+      side: "right", front, back, ms,
+      exposed: async () => setSlot($("#slotR"), await surf(target + 1, { fast })),
+      mid: () => { S.side = 0; applyDeck(ms); },
+      covered: () => { S.page = target; setSlotEl($("#slotL"), back); paintDepth(); },
+    });
+  } else {
+    const front = $("#slotL").firstElementChild || await surf(S.page, { fast });
+    const back = await surf(target + 1, { fast });
+    await runFlip({
+      side: "left", front, back, ms,
+      exposed: async () => setSlot($("#slotL"), await surf(target, { fast })),
+      mid: () => { S.side = 1; applyDeck(ms); },
+      covered: () => { S.page = target; setSlotEl($("#slotR"), back); paintDepth(); },
+    });
+  }
+  S.animating = false;
+  syncChrome(); save(); drainQueue();
+}
+async function pan(dir) {
+  S.animating = true;
+  const ms = S.reduce ? 1 : 430;
+  S.side = dir > 0 ? 1 : 0;
+  applyDeck(ms); syncChrome(); save();
+  await sleep(ms);
+  S.animating = false; drainQueue();
+}
+
+function actionFor(dir) {
+  if (!S.src) return null;
+  if (S.state === "closed-front") return dir > 0 ? "open-front" : null;
+  if (S.state === "closed-back") return dir < 0 ? "open-back" : null;
+  if (S.state !== "open") return null;
+  const last = LAST();
+  if (G.view === 1) {
+    if (dir > 0) return S.side === 0 ? "pan" : S.page + 2 <= last ? "flip" : "close-back";
+    return S.side === 1 ? "pan" : S.page - 2 >= 2 ? "flip" : "close-front";
+  }
+  if (dir > 0) return S.page + 2 <= last ? "flip" : "close-back";
+  return S.page - 2 >= 2 ? "flip" : "close-front";
+}
+async function turn(dir) {
+  if (!S.src || S.animating) return;
+  const a = actionFor(dir);
+  if (!a) { S.queue = 0; return; }
+  if (a === "open-front") return openFront();
+  if (a === "open-back") return openBack();
+  if (a === "close-front") { S.queue = 0; return closeFront(); }
+  if (a === "close-back") { S.queue = 0; return closeBack(); }
+  if (a === "pan") return pan(dir);
+  return flipPage(dir);
+}
+function queueTurn(dir) {
+  if (!S.src) return;
+  if (S.animating) { S.queue = clamp(S.queue + dir, -8, 8); return; }
+  turn(dir);
+}
+function drainQueue() { if (!S.queue) return; const d = S.queue > 0 ? 1 : -1; S.queue -= d; turn(d); }
+const jump = (n) => { if (S.src) goto(currentPage() + n); };
+
+async function goto(p) {
+  if (!S.src) return;
+  S.queue = 0;
+  const last = LAST();
+  p = clamp(Math.round(p) || 1, 1, last);
+  if (p <= 1) { await showClosedFront(); save(); return; }
+  S.page = spreadAnchor(p);
+  S.side = G.view === 1 && p % 2 === 1 ? 1 : 0;
+  if (S.state !== "open") { clearFlippers(); setState("open"); }
+  await paint({});
+  applyDeck(0); save();
+}
+
+let riffleWant = null, riffleBusy = false;
+async function pumpRiffle() {
+  if (riffleBusy) return;
+  riffleBusy = true;
+  while (riffleWant != null) {
+    const p = riffleWant; riffleWant = null;
+    S.page = spreadAnchor(p);
+    S.side = G.view === 1 && p % 2 === 1 ? 1 : 0;
+    if (S.state !== "open") { clearFlippers(); setState("open", 0); }
+    applyDeck(0);
+    await paint({ fast: true });
+  }
+  riffleBusy = false;
+}
+function riffleTo(p) { riffleWant = p; pumpRiffle(); }
+function save() { if (S.key) Store.set(S.key, { page: currentPage(), marks: S.bookmarks }); }
+
+function syncChrome() {
+  const folio = $("#folio");
+  if (!S.src) { folio.textContent = "No book open"; $("#pct").textContent = ""; paintDepth(); return; }
+  const N = Math.max(2, LAST()), tot = (S.src.pageCountKnown ? "" : "~") + N;
+  let label;
+  if (S.state === "closed-front") label = "Front cover";
+  else if (S.state === "closed-back") label = "Back cover";
+  else if (G.view === 1) label = `Page ${currentPage()} of ${tot}`;
+  else label = `Pages ${S.page}\u2013${Math.min(S.page + 1, N)} of ${tot}`;
+  folio.textContent = label;
+
+  const p = currentPage(), f = clamp((p - 1) / (N - 1), 0, 1);
+  const mins = Math.round((Math.max(0, N - p) * S.wpp) / 240);
+  $("#pct").textContent = Math.round(f * 100) + "%" + (mins > 0 ? " · " + (mins >= 60 ? Math.floor(mins / 60) + "h" + String(mins % 60).padStart(2, "0") : mins + "m") : "");
+  $("#railFill").style.width = f * 100 + "%";
+  $("#knob").style.left = f * 100 + "%";
+  const tr = $("#track");
+  tr.setAttribute("aria-valuemax", String(N));
+  tr.setAttribute("aria-valuenow", String(p));
+  tr.setAttribute("aria-valuetext", label);
+  $("#prev").disabled = S.state === "closed-front";
+  $("#next").disabled = S.state === "closed-back";
+  $("#markBtn").setAttribute("aria-pressed", String(S.bookmarks.includes(p)));
+  $("#markBtn").textContent = S.bookmarks.includes(p) ? "★" : "☆";
+  paintDepth(); syncTocActive(); drawMarks();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CHROME
+   ══════════════════════════════════════════════════════════════════════════ */
+const ORIENT = ["auto", "portrait", "landscape"];
+const ORIENT_LABEL = { auto: "Auto", portrait: "Portrait", landscape: "Spread" };
+let tocItems = [];
+
+function drawMarks() {
+  const m = $("#railMarks");
+  m.replaceChildren();
+  if (!S.src) return;
+  const N = Math.max(2, LAST());
+  for (const p of S.bookmarks) { const i = el("i"); i.style.left = ((p - 1) / (N - 1)) * 100 + "%"; m.append(i); }
+}
+function syncTocActive() {
+  let best = null;
+  const p = currentPage();
+  for (const e of tocItems) if (e.it.page != null && e.it.page > 0 && e.it.page <= p && (!best || e.it.page >= best.it.page)) best = e;
+  for (const e of tocItems) e.node.setAttribute("aria-current", e === best ? "true" : "false");
+}
+async function buildToc() {
+  const body = $("#tocBody");
+  body.replaceChildren();
+  tocItems = [];
+  if (!S.src) { body.append(el("p", "empty", "No book open.")); return; }
+  if (S.bookmarks.length) {
+    const box = el("div", "field");
+    box.append(el("label", null, "Bookmarks"));
+    for (const p of [...S.bookmarks].sort((a, b) => a - b)) {
+      const b = el("button", "toc-item");
+      b.append(el("span", "n", String(p)), el("span", "t", S.src.sectionLabel ? S.src.sectionLabel(p) : "Page " + p));
+      b.onclick = () => { goto(p); closePanels(); };
+      box.append(b);
+    }
+    body.append(box);
+  }
+  let items = [];
+  try { items = (await fence(S.src.outline ? S.src.outline() : Promise.resolve([]), 20000, [])) || []; } catch {}
+  if (!items.length) { body.append(el("p", "empty", "This book carries no table of contents. Use the riffle track, or click the page label to jump.")); return; }
+  const wrap = el("div");
+  for (const it of items) {
+    const b = el("button", "toc-item" + (it.depth ? " d" + Math.min(3, it.depth) : ""));
+    const n = el("span", "n", it.page != null && it.page > 0 ? String(it.page) : "");
+    b.append(n, el("span", "t", it.label));
+    b.onclick = async () => {
+      n.textContent = "…";
+      let p = null;
+      try { p = await fence(S.src.pageOfEntry ? S.src.pageOfEntry(it) : Promise.resolve(it.page), 25000, null); } catch {}
+      if (p == null) p = it.page ?? null;
+      n.textContent = p != null && p > 0 ? String(p) : "—";
+      if (p != null && p > 0) { it.page = p; await goto(p); closePanels(); }
+      else toast("warn", "That entry does not point anywhere Flipbook can resolve.");
+    };
+    tocItems.push({ it, node: b });
+    wrap.append(b);
+  }
+  body.append(wrap);
+  syncTocActive();
+}
+function closePanels() { $("#toc").dataset.open = "0"; $("#type").dataset.open = "0"; }
+function togglePanel(id) { const d = $("#" + id), was = d.dataset.open === "1"; closePanels(); if (!was) { d.dataset.open = "1"; if (id === "toc") buildToc(); } }
+
+function buildFaceChips() {
+  const box = $("#faces");
+  box.replaceChildren();
+  for (const f of FACES) {
+    const b = el("button", "chip", f.name);
+    b.dataset.font = f.id;
+    b.style.fontFamily = f.stack;
+    b.onclick = () => { S.type.font = f.id; S.type.publisher = false; afterType(); };
+    box.append(b);
+  }
+}
+function syncTypeUI() {
+  $("#faces").querySelectorAll("[data-font]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.font === S.type.font && !S.type.publisher)));
+  $("#oSize").textContent = S.type.size + "%";
+  $("#oLead").textContent = S.type.lead.toFixed(2);
+  $("#rMargin").value = String(S.type.margin);
+  $("#aligns").querySelectorAll("[data-align]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.align === S.type.align)));
+  $("#themes").querySelectorAll("[data-theme-set]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeSet === S.theme)));
+  $("#pubCss").setAttribute("aria-pressed", String(!!S.type.publisher));
+  $("#viewTxt").textContent = ORIENT_LABEL[S.orient];
+  $("#viewBtn").setAttribute("aria-pressed", String(S.orient !== "auto"));
+}
+function afterType() { Store.set("flipbook.type", S.type); dropFontCache(); syncTypeUI(); scheduleReflow(80); }
+function setTheme(t) { S.theme = t; document.documentElement.dataset.theme = t; Store.set("flipbook.theme", t); syncTypeUI(); }
+function cycleOrient() {
+  S.orient = ORIENT[(ORIENT.indexOf(S.orient) + 1) % 3];
+  Store.set("flipbook.layout", S.orient);
+  syncTypeUI();
+  toast("add", S.orient === "auto" ? "Layout follows the window." : S.orient === "portrait" ? "One page at a time." : "Always a two-page spread.", 2200);
+  scheduleReflow(0);
+}
+function addMark() {
+  if (!S.src || S.state !== "open") { toast("warn", "Open the book first."); return; }
+  const p = currentPage(), i = S.bookmarks.indexOf(p);
+  if (i >= 0) { S.bookmarks.splice(i, 1); toast("add", "Bookmark cleared from page " + p, 1800); }
+  else { S.bookmarks.push(p); toast("ok", "Bookmarked page " + p, 1800); }
+  save(); syncChrome();
+  if ($("#toc").dataset.open === "1") buildToc();
+}
+function setFocus(on) {
+  $("#app").dataset.focus = on ? "1" : "0";
+  $("#focusBtn").setAttribute("aria-pressed", String(!!on));
+  if (on) closePanels();
+  scheduleReflow(340);
+}
+function toggleFs() {
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else document.documentElement.requestFullscreen?.().catch(() => toast("warn", "The browser refused fullscreen."));
+}
+
+let reflowT;
+function scheduleReflow(delay = 200) { clearTimeout(reflowT); reflowT = setTimeout(doReflow, delay); }
+async function doReflow() {
+  if (!S.src) { relayout(); return; }
+  const st = S.state, before = currentPage();
+  const a = S.src.anchor ? S.src.anchor(before) : null;
+  relayout();
+  if (S.src.invalidate) S.src.invalidate();
+  let want = before;
+  if (a && S.src.fromAnchor) {
+    /* Reflowing changes how much text fits a page, so the old number means
+       nothing. The anchor carries the section and how far into it we were. */
+    try { want = (await fence(S.src.fromAnchor(a), 40000, before)) || before; } catch { want = before; }
+  }
+  if (st === "closed-front") await showClosedFront();
+  else if (st === "closed-back") await showClosedBack();
+  else await goto(want);
+  if (S.src.paginate) {
+    const bar = $("#work").firstElementChild;
+    S.src.paginate((d, t) => { bar.style.width = Math.round((d / t) * 100) + "%"; })
+      .then(() => { bar.style.width = "0%"; syncChrome(); });
+  }
+  syncChrome();
+}
+
+/* ── loading ───────────────────────────────────────────────────────────── */
+function sniff(buf) {
+  const b = new Uint8Array(buf.slice(0, 4));
+  if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return "pdf";
+  if (b[0] === 0x50 && b[1] === 0x4b) return "epub";
+  return null;
+}
+function teardown() {
+  if (S.src?.destroy) { try { S.src.destroy(); } catch {} }
+  S.src = null; S.page = 2; S.side = 0; S.queue = 0; S.animating = false;
+  S.hits = { needle: "", list: [], at: -1, cur: null };
+  tocItems = [];
+  clearSlots(); clearFlippers();
+  setState("shelf", 0);
+}
+async function openFile(file) {
+  if (!file) return;
+  const name = file.name || "book";
+  status("Opening " + name + "…");
+  let buf;
+  try { buf = await file.arrayBuffer(); } catch { toast("err", "That file could not be read from disk."); status("Could not read the file", "err"); return; }
+  /* Sniff the bytes rather than trusting the extension. */
+  const kind = sniff(buf) || (/\.epub$/i.test(name) ? "epub" : /\.pdf$/i.test(name) ? "pdf" : null);
+  if (!kind) { toast("err", "Unsupported file. Flipbook reads PDF and EPUB."); status("Unsupported file", "err"); return; }
+  teardown();
+  const t0 = performance.now();
+  try { S.src = kind === "epub" ? await makeEpubSource(buf, name) : await makePdfSource(buf, name); }
+  catch (err) {
+    console.error(err);
+    toast("err", err?.message || "This book could not be opened.", 7000);
+    status("Could not open this book", "err");
+    $("#welcome").hidden = false;
+    setState("shelf");
+    return;
+  }
+  S.key = "flipbook:pos:" + name + ":" + file.size;
+  const saved = Store.get(S.key, null);
+  S.bookmarks = Array.isArray(saved?.marks) ? saved.marks : [];
+  S.resume = saved && saved.page > 1 ? saved.page : 0;
+  $("#findIn").value = ""; $("#findN").textContent = "";
+  $("#findPrev").disabled = true; $("#findNext").disabled = true;
+  $("#welcome").hidden = true;
+  relayout();
+  await showClosedFront();
+  buildToc();
+  const ms = Math.round(performance.now() - t0);
+  status(`${S.src.title || name} · ready`, "ok");
+  toast("ok", `${S.src.title || name} opened in ${ms}ms. Click the cover to open it.`, 4200);
+  if (S.src.paginate) {
+    const bar = $("#work").firstElementChild;
+    S.src.paginate((d, t) => { bar.style.width = Math.round((d / t) * 100) + "%"; if (d % 4 === 0 || d === t) syncChrome(); })
+      .then((done) => { bar.style.width = "0%"; syncChrome(); if (done) log("ok", `Paginated: ${S.src.pageCount} pages at this setting`); });
+  }
+  if (S.resume) setTimeout(() => { if (S.state === "closed-front") toast("try", `Last read at page ${S.resume}. Press Enter to resume.`, 6500); }, 1500);
+  console.info(`Flipbook [OK]  Load completed with ${nErr} critical errors, ${nWarn} minor errors`);
+}
+
+/* ── search ────────────────────────────────────────────────────────────── */
+let searchSeq = 0;
+async function runSearch() {
+  const q = $("#findIn").value.trim();
+  if (!S.src) { toast("warn", "Open a book first."); return; }
+  if (q.length < 2) { toast("warn", "Type at least two characters."); return; }
+  const seq = ++searchSeq;
+  status(`Searching for "${q}"…`);
+  S.hits = { needle: q, list: [], at: -1, cur: null };
+  $("#findPrev").disabled = true; $("#findNext").disabled = true;
+  let list = [];
+  try { list = (await fence(S.src.search(q), 90000, [])) || []; } catch {}
+  if (seq !== searchSeq || $("#findIn").value.trim() !== q) return;
+  S.hits.list = list;
+  if (!list.length) {
+    S.hits.needle = "";
+    $("#findN").textContent = "0";
+    $("#findPrev").disabled = true; $("#findNext").disabled = true;
+    status("No matches", "err");
+    toast("warn", `No matches for "${q}".`);
+    return;
+  }
+  $("#findPrev").disabled = false; $("#findNext").disabled = false;
+  status(`${list.length} match${list.length > 1 ? "es" : ""}`, "ok");
+  await gotoHit(0);
+}
+function searchStep(dir) {
+  const q = $("#findIn").value.trim();
+  if (q.length < 2) { toast("warn", "Type at least two characters."); return; }
+  if (q !== S.hits.needle || !S.hits.list.length) runSearch();
+  else gotoHit(S.hits.at + dir);
+}
+async function gotoHit(i) {
+  const L = S.hits.list;
+  if (!L.length) return;
+  S.hits.at = ((i % L.length) + L.length) % L.length;
+  $("#findN").textContent = S.hits.at + 1 + "/" + L.length;
+  const h = L[S.hits.at];
+  /* The active occurrence is recorded before painting so the leaf that lands can
+     pick out which of several matches on the page the reader is standing on. */
+  S.hits.cur = S.src.hitKey ? S.src.hitKey(h) : null;
+  let p = null;
+  try { p = await fence(S.src.pageOfHit(h), 25000, null); } catch {}
+  if (p == null) { toast("warn", "That match could not be placed on a page."); return; }
+  await goto(p);
+  if (h.snippet) toast("ok", h.snippet, 4200);
+}
+
+/* ── page jump ─────────────────────────────────────────────────────────── */
+function openJump() {
+  if (!S.src) return;
+  const f = $("#folio"), i = $("#folioIn");
+  f.hidden = true; i.hidden = false;
+  i.max = String(LAST()); i.value = String(currentPage());
+  i.focus(); i.select();
+}
+function closeJump(apply) {
+  const f = $("#folio"), i = $("#folioIn");
+  i.hidden = true; f.hidden = false;
+  if (apply) { const v = parseInt(i.value, 10); if (!isNaN(v)) goto(v); }
+  syncChrome();
+}
+
+/* ── wiring ────────────────────────────────────────────────────────────── */
+const pick = () => $("#file").click();
+$("#file").onchange = (e) => { const f = e.target.files?.[0]; if (f) openFile(f); e.target.value = ""; };
+$("#file2").onchange = (e) => { const f = e.target.files?.[0]; if (f) openFile(f); e.target.value = ""; };
+$("#prev").onclick = () => queueTurn(-1);
+$("#next").onclick = () => queueTurn(1);
+$("#tocBtn").onclick = () => togglePanel("toc");
+$("#typeBtn").onclick = () => togglePanel("type");
+$("#viewBtn").onclick = cycleOrient;
+$("#markBtn").onclick = addMark;
+$("#focusBtn").onclick = () => setFocus($("#app").dataset.focus !== "1");
+$("#fsBtn").onclick = toggleFs;
+$("#leave").onclick = () => setFocus(false);
+$("#folio").onclick = openJump;
+$("#folioIn").onblur = () => closeJump(true);
+$("#folioIn").onkeydown = (e) => {
+  if (e.key === "Enter") { e.preventDefault(); closeJump(true); }
+  if (e.key === "Escape") { e.preventDefault(); closeJump(false); }
+};
+$("#findNext").onclick = () => searchStep(1);
+$("#findPrev").onclick = () => searchStep(-1);
+$("#findIn").oninput = () => {
+  const q = $("#findIn").value.trim();
+  if (q !== S.hits.needle) {
+    searchSeq++;
+    S.hits = { needle: "", list: [], at: -1, cur: null };
+    $("#findN").textContent = "";
+    $("#findPrev").disabled = true;
+    /* The down arrow doubles as the visible 'start search' control. */
+    $("#findNext").disabled = !S.src || q.length < 2;
+  }
+};
+$("#findIn").onkeydown = (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const q = $("#findIn").value.trim();
+  if (q && q === S.hits.needle && S.hits.list.length) gotoHit(S.hits.at + 1);
+  else runSearch();
+};
+document.querySelectorAll("[data-close]").forEach((b) => (b.onclick = closePanels));
+document.querySelectorAll("[data-step]").forEach((b) => {
+  b.onclick = () => {
+    const [k, v] = b.dataset.step.split(":"), d = parseFloat(v);
+    if (k === "size") S.type.size = clamp(S.type.size + d, 60, 220);
+    if (k === "lead") S.type.lead = clamp(Math.round((S.type.lead + d) * 100) / 100, 1.1, 2.4);
+    afterType();
+  };
+});
+$("#rMargin").oninput = () => { S.type.margin = parseFloat($("#rMargin").value) || 1; afterType(); };
+$("#aligns").querySelectorAll("[data-align]").forEach((b) => (b.onclick = () => { S.type.align = b.dataset.align; afterType(); }));
+$("#themes").querySelectorAll("[data-theme-set]").forEach((b) => (b.onclick = () => setTheme(b.dataset.themeSet)));
+$("#pubCss").onclick = () => { S.type.publisher = !S.type.publisher; afterType(); };
+document.addEventListener("fullscreenchange", () => {
+  $("#fsBtn").setAttribute("aria-pressed", String(!!document.fullscreenElement));
+  scheduleReflow(240);
+});
+
+/* Riffle track */
+{
+  const tr = $("#track"), rail = $("#rail"), peek = $("#peek");
+  let dragging = false, peekT = 0;
+  const pageAt = (x) => {
+    const r = rail.getBoundingClientRect();
+    const f = clamp((x - r.left) / Math.max(1, r.width), 0, 1);
+    const N = Math.max(2, LAST());
+    return clamp(Math.round(1 + f * (N - 1)), 2, N);
+  };
+  function movePeek(x, page) {
+    const r = tr.getBoundingClientRect();
+    peek.style.left = clamp(x - r.left, 78, Math.max(78, r.width - 78)) + "px";
+    $("#peekTxt").textContent = (S.src?.sectionLabel ? S.src.sectionLabel(page) : "Page " + page) + " · " + page;
+    const cv = $("#peekCv");
+    if (!S.src?.thumb) { cv.hidden = true; return; }
+    clearTimeout(peekT);
+    peekT = setTimeout(async () => {
+      try {
+        const t = await S.src.thumb(page);
+        if (!t) { cv.hidden = true; return; }
+        cv.hidden = false;
+        cv.width = t.width; cv.height = t.height;
+        cv.getContext("2d").drawImage(t, 0, 0);
+      } catch {}
+    }, 100);
+  }
+  const move = (e) => { const p = pageAt(e.clientX); riffleTo(p); movePeek(e.clientX, p); };
+  tr.addEventListener("pointerdown", (e) => {
+    if (!S.src) return;
+    dragging = true;
+    try { tr.setPointerCapture(e.pointerId); } catch {}
+    S.riffling = true; S.queue = 0;
+    tr.classList.add("hot");
+    $("#book").classList.add("riffling");
+    move(e);
+  });
+  tr.addEventListener("pointermove", (e) => { if (dragging) move(e); else if (S.src) movePeek(e.clientX, pageAt(e.clientX)); });
+  const stop = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    try { tr.releasePointerCapture(e.pointerId); } catch {}
+    S.riffling = false;
+    tr.classList.remove("hot");
+    $("#book").classList.remove("riffling");
+    goto(currentPage());
+  };
+  tr.addEventListener("pointerup", stop);
+  tr.addEventListener("pointercancel", stop);
+  tr.addEventListener("keydown", (e) => {
+    if (!S.src) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); queueTurn(1); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); queueTurn(-1); }
+    else if (e.key === "Home") { e.preventDefault(); goto(1); }
+    else if (e.key === "End") { e.preventDefault(); goto(LAST()); }
+  });
+}
+
+/* Click the book: covers open, page edges turn, the middle is for reading */
+$("#book").addEventListener("click", (e) => {
+  if (!S.src || S.animating) return;
+  if (String(window.getSelection?.() || "").length > 1) return;
+  if (S.state === "closed-front") { openFront(); return; }
+  if (S.state === "closed-back") { openBack(); return; }
+  const r = $("#book").getBoundingClientRect();
+  const x = (e.clientX - r.left) / Math.max(1, r.width);
+  if (G.view === 1) { queueTurn(x > (S.side === 0 ? 0.25 : 0.75) ? 1 : -1); return; }
+  if (x > 0.8) queueTurn(1);
+  else if (x < 0.2) queueTurn(-1);
+});
+
+/* Keyboard */
+const isField = (t) => !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+window.addEventListener("keydown", (e) => {
+  if (isField(e.target)) { if (e.key === "Escape") e.target.blur(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  switch (e.key) {
+    case "ArrowRight": case "PageDown": case " ":
+      e.preventDefault(); e.shiftKey ? jump(10) : queueTurn(1); return;
+    case "ArrowLeft": case "PageUp":
+      e.preventDefault(); e.shiftKey ? jump(-10) : queueTurn(-1); return;
+    case "Home": e.preventDefault(); goto(1); return;
+    case "End": e.preventDefault(); if (S.src) goto(LAST()); return;
+    case "Escape":
+      if ($("#app").dataset.focus === "1") { setFocus(false); return; }
+      closePanels(); return;
+    case "Enter":
+      if (S.state === "closed-front") {
+        e.preventDefault();
+        if (S.resume) { const p = S.resume; S.resume = 0; goto(p); } else openFront();
+      } else if (S.state === "closed-back") { e.preventDefault(); openBack(); }
+      return;
+    case "/": e.preventDefault(); $("#findIn").focus(); return;
+  }
+  switch (e.key.toLowerCase()) {
+    case "f": e.preventDefault(); e.shiftKey ? setFocus($("#app").dataset.focus !== "1") : toggleFs(); break;
+    case "c": e.preventDefault(); togglePanel("toc"); break;
+    case "t": e.preventDefault(); togglePanel("type"); break;
+    case "p": e.preventDefault(); cycleOrient(); break;
+    case "b": e.preventDefault(); addMark(); break;
+    case "o": e.preventDefault(); pick(); break;
+    case "r": e.preventDefault(); $("#track").focus(); toast("try", "Drag the track to riffle, or hold ← →.", 2200); break;
+  }
+});
+
+/* Wheel and swipe */
+let wheelLock = false, wheelAcc = 0, wheelT = 0;
+window.addEventListener("wheel", (e) => {
+  if (!S.src || e.target.closest?.(".panel,#track")) return;
+  wheelAcc += e.deltaY;
+  clearTimeout(wheelT);
+  wheelT = setTimeout(() => (wheelAcc = 0), 150);
+  if (Math.abs(wheelAcc) < 30) return;
+  const d = wheelAcc > 0 ? 1 : -1;
+  wheelAcc = 0;
+  if (wheelLock) return;
+  wheelLock = true;
+  setTimeout(() => (wheelLock = false), 90);
+  queueTurn(d);
+}, { passive: true });
+{
+  let x0 = null, y0 = null, moved = false;
+  const st = $("#stage");
+  st.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; moved = false;
+  }, { passive: true });
+  st.addEventListener("touchmove", (e) => {
+    if (x0 == null) return;
+    if (Math.abs(e.touches[0].clientX - x0) > 8 || Math.abs(e.touches[0].clientY - y0) > 8) moved = true;
+  }, { passive: true });
+  st.addEventListener("touchend", (e) => {
+    if (x0 == null || !moved) { x0 = null; return; }
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.25) queueTurn(dx < 0 ? 1 : -1);
+    x0 = null;
+  }, { passive: true });
+}
+
+/* Drop a book anywhere */
+["dragenter", "dragover"].forEach((ev) => window.addEventListener(ev, (e) => { e.preventDefault(); if (!S.src) $("#stage").classList.add("drop"); }));
+window.addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("#stage").classList.remove("drop"); });
+window.addEventListener("drop", (e) => {
+  e.preventDefault();
+  $("#stage").classList.remove("drop");
+  const f = e.dataTransfer?.files?.[0];
+  if (f) openFile(f);
+});
+window.addEventListener("resize", () => scheduleReflow(220));
+matchMedia("(orientation: portrait)").addEventListener?.("change", () => scheduleReflow(260));
+
+/* ── init ──────────────────────────────────────────────────────────────── */
+(function init() {
+  document.documentElement.dataset.theme = S.theme;
+  buildFaceChips();
+  syncTypeUI();
+  relayout();
+  syncChrome();
+  if (!Store.live) log("warn", "Local storage is blocked here, so reading positions last only for this session.");
+  if (!window.ePub || !window.JSZip) log("warn", "epub.js did not load — EPUB support is unavailable.");
+  if (!(window["pdfjs-dist/build/pdf"] || window.pdfjsLib)) log("warn", "pdf.js did not load — PDF support is unavailable.");
+  console.info(`Flipbook [OK]  Ready with ${nErr} critical errors, ${nWarn} minor errors`);
+})();
+})();
+</script>
+</body>
+</html>
