@@ -133,7 +133,9 @@ button{border:0;background:none;cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 
 #app{
-  height:100dvh; display:grid; grid-template-rows:auto 1fr auto;
+  /* One explicit column: without it the toolbar's min-content width could
+     stretch every row past the viewport, pushing right-anchored chrome off-screen. */
+  height:100dvh; display:grid; grid-template-rows:auto 1fr auto; grid-template-columns:minmax(0,1fr);
   background:radial-gradient(circle at 50% 34%,rgba(255,255,255,.16),transparent 46%),
              linear-gradient(170deg,var(--stage) 0%,var(--stage) 42%,var(--stage-dark) 100%);
   transition:background .35s linear;
@@ -141,7 +143,7 @@ button{border:0;background:none;cursor:pointer}
 
 /* ── chrome bars ──────────────────────────────────────────────────────── */
 .bar{
-  z-index:50; display:flex; align-items:center; gap:9px;
+  z-index:50; display:flex; align-items:center; gap:9px; min-width:0;
   padding:10px clamp(11px,2vw,26px);
   background:var(--chrome); backdrop-filter:blur(18px) saturate(1.2);
   visibility:visible;
@@ -565,7 +567,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   scrollbar-gutter:stable;background:rgba(0,0,0,.035)}
 #app[data-linear="1"] #linearReader{display:block}
 #app[data-linear="1"] #deck,#app[data-linear="1"] #edges{display:none}
-#linearPages{width:100%;padding:24px 12px 64px}
+#linearPages{width:100%;min-width:max-content;padding:24px 12px 64px;zoom:var(--zoom,1)}
 .linear-page{position:relative;margin:0 auto 18px;overflow:hidden;background:var(--paper);
   border:1px solid var(--line);border-radius:3px;box-shadow:0 16px 38px -22px var(--shadow)}
 .linear-page .leaf{position:absolute;inset:0}
@@ -3549,7 +3551,7 @@ const Zoom = (() => {
   }
   function paint(fast) {
     t.classList.toggle("fast", !!fast);
-    t.style.setProperty("--zoom", S.zoom.toFixed(3));
+    app.style.setProperty("--zoom", S.zoom.toFixed(3));
     t.style.setProperty("--zx", S.zx.toFixed(1) + "px");
     t.style.setProperty("--zy", S.zy.toFixed(1) + "px");
     app.dataset.zoomed = S.zoom !== 1 ? "1" : "0";
@@ -3582,6 +3584,28 @@ const Zoom = (() => {
     return { xMin: Math.min(0, -hx - shift), xMax: Math.max(0, hx - shift), y: Math.max(0, (bh - r.height) / 2 + 24), r, bw, bh, shift };
   }
   function limitPan() { const L = limits(); S.zx = clamp(S.zx, L.xMin, L.xMax); S.zy = clamp(S.zy, -L.y, L.y); }
+  /* Continuous mode has no pan of its own: the scroll container does the
+     work. Magnify the page column and keep the same content under the
+     reading line, centred horizontally. */
+  let linAnchor = null;
+  async function linearZoom(nz) {
+    const rd = $("#linearReader");
+    /* The anchor is read once per burst of zoom steps; reading it again after
+       a step has changed the layout would measure a half-applied state. */
+    if (!linAnchor) linAnchor = {
+      fy: rd.scrollHeight > 0 ? (rd.scrollTop + rd.clientHeight * 0.4) / rd.scrollHeight : 0,
+      fx: rd.scrollWidth > rd.clientWidth ? (rd.scrollLeft + rd.clientWidth / 2) / rd.scrollWidth : 0.5,
+    };
+    S.zoom = nz; S.zx = S.zy = 0;
+    paint(true);
+    pageAt = currentPage();
+    await raf();
+    if (S.zoom !== nz || S.state !== "linear") return;
+    const a = linAnchor; linAnchor = null;
+    /* One instant scrollTo: the reader scrolls smoothly by default, and a
+       second smooth request would cancel the first. */
+    rd.scrollTo({ top: a.fy * rd.scrollHeight - rd.clientHeight * 0.4, left: a.fx * rd.scrollWidth - rd.clientWidth / 2, behavior: "instant" });
+  }
   /* Pan so the leaf being read starts at its top-left corner, or sits in its
      natural framing when it already fits. */
   function startCorner() {
@@ -3667,7 +3691,7 @@ const Zoom = (() => {
       window.addEventListener("resize", () => { if (S.zoom !== 1) { limitPan(); paint(true); } });
       /* Pinch on touch devices. */
       let pinch = null;
-      st.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && S.src && S.state !== "linear" && !e.target.closest("#minimap")) pinch = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z: S.zoom }; }, { passive: true });
+      st.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && S.src && !e.target.closest("#minimap")) pinch = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z: S.zoom }; }, { passive: true });
       st.addEventListener("touchmove", (e) => {
         if (!pinch || e.touches.length !== 2) return;
         e.preventDefault();
@@ -3683,8 +3707,9 @@ const Zoom = (() => {
       });
     },
     set(z, cx, cy, fast) {
-      if (!S.src || S.state === "linear") return;
+      if (!S.src) return;
       const nz = clamp(z, 1, 5);
+      if (S.state === "linear") { linearZoom(nz); return; }
       if (cx != null) {
         /* Keep the point under the cursor fixed while the scale changes. */
         const c = centre();
@@ -3702,12 +3727,16 @@ const Zoom = (() => {
     /* Freshly painted leaves need the current magnification too. */
     sharpen(leaf) { if (S.zoom !== 1 && S.src?.sharpen && leaf?._kind === "pdf") S.src.sharpen(leaf, S.zoom).catch(() => {}); },
     pan(dx, dy) { S.zx += dx; S.zy += dy; limitPan(); paint(true); },
-    reset(quiet) { if (S.zoom === 1 && !S.zx && !S.zy) return; S.zoom = 1; S.zx = S.zy = 0; paint(false); if (!quiet) toast("add", "Zoom reset.", 1200); },
+    reset(quiet) {
+      if (S.zoom === 1 && !S.zx && !S.zy) return;
+      if (S.state === "linear" && S.src) { linearZoom(1); } else { S.zoom = 1; S.zx = S.zy = 0; paint(false); }
+      if (!quiet) toast("add", "Zoom reset.", 1200);
+    },
     isFast: () => t.classList.contains("fast"),
     /* Turning a page while magnified keeps the magnification and starts the
        new spread at its top-left corner, which is where reading resumes. */
     onChrome(p) {
-      if (S.zoom === 1) { pageAt = p; return; }
+      if (S.zoom === 1 || S.state === "linear") { pageAt = p; return; }
       if (p !== pageAt) { pageAt = p; if (S.state !== "open") api.reset(true); else { startCorner(); paint(false); } }
       else buildMini();
     },
@@ -5304,10 +5333,15 @@ $("#linearReader").addEventListener("scroll", () => {
   if (S.state !== "linear" || linearScrollT) return;
   linearScrollT = requestAnimationFrame(() => {
     linearScrollT = 0;
-    const host = $("#linearPages"), first = host.firstElementChild;
-    if (!first) return;
-    const gap = innerWidth < 1100 ? 10 : 18;
-    const p = clamp(Math.round(($("#linearReader").scrollTop - first.offsetTop) / Math.max(1, G.pageH + gap)) + 1, 1, LAST());
+    const host = $("#linearPages"), pages = host.children;
+    if (!pages.length) return;
+    /* The page under the reading line (40% down the viewport). Rects, not
+       offsets, so magnification cannot skew the count; pages are in order,
+       so a binary search is enough. */
+    const rd = $("#linearReader").getBoundingClientRect(), line = rd.top + rd.height * 0.4;
+    let lo = 0, hi = pages.length - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (pages[mid].getBoundingClientRect().bottom < line) lo = mid + 1; else hi = mid; }
+    const p = clamp(lo + 1, 1, LAST());
     if (p !== S.page) { S.page = p; S.side = 0; syncChrome(); save(); }
   });
 }, { passive: true });
@@ -5472,7 +5506,7 @@ window.addEventListener("keydown", (e) => {
 let wheelLock = false, wheelAcc = 0, wheelT = 0;
 window.addEventListener("wheel", (e) => {
   if (e.ctrlKey || e.metaKey) {
-    if (!S.src || S.orient === "linear" || e.target.closest?.(".panel,#pop,#palette,#grid,#keys,#sprint")) return;
+    if (!S.src || e.target.closest?.(".panel,#pop,#palette,#grid,#keys,#sprint")) return;
     e.preventDefault();
     Zoom.by(e.deltaY < 0 ? 1.12 : 0.89, e.clientX, e.clientY);
     return;
