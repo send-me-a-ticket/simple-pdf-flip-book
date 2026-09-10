@@ -51,11 +51,34 @@ Browser-based database, offline support and text-to-speech support.
 
 ---
 
-<img width="1848" height="1965" alt="image" src="https://github.com/user-attachments/assets/ad04ccab-516c-4101-9a39-c91bb5832ecb" />
 
-<img width="1842" height="1968" alt="image" src="https://github.com/user-attachments/assets/ca6dd08c-bf18-4c05-b22d-442d2b79817e" />
+> <img width="1329" height="961" alt="image" src="https://github.com/user-attachments/assets/34198f47-34b2-4541-bc74-322e3b030411" />
+> Elegant UI
 
-<img width="1851" height="1970" alt="image" src="https://github.com/user-attachments/assets/71655561-29f3-4a1f-9e2b-68df64001cae" />
+> <img width="1329" height="961" alt="image" src="https://github.com/user-attachments/assets/34198f47-34b2-4541-bc74-322e3b030411" />
+> Browser-based local storage
 
-<img width="1851" height="1977" alt="image" src="https://github.com/user-attachments/assets/c86f1795-9f7c-4ff4-9695-a9107f72facf" />
+> <img width="1326" height="957" alt="image" src="https://github.com/user-attachments/assets/02a9c1a5-e808-4457-8b7f-e903915dfba7" />
+> Expansive, clean canvas
+
+> <img width="1328" height="959" alt="image" src="https://github.com/user-attachments/assets/fc0ff2d7-b59f-4f2f-b17a-a22013bd5d8b" />
+> page flip animations & fast-scroll mode
+
+> <img width="1328" height="961" alt="image" src="https://github.com/user-attachments/assets/4ed22d8f-b58d-4664-a3ae-17e3eb841b40" />
+> Page zoom, selection highlight and definition lookup
+
+> <img width="1327" height="960" alt="image" src="https://github.com/user-attachments/assets/cf2adf14-8d6e-4d28-bc6b-a13a614cae8f" />
+> Reading timer
+
+> <img width="1329" height="959" alt="image" src="https://github.com/user-attachments/assets/f7e9894f-70e3-43dd-9d77-7bea5a759c22" />
+> Text-to-speech support
+
+> <img width="1328" height="959" alt="image" src="https://github.com/user-attachments/assets/cda6f0ee-8665-4e7f-99cc-45d9157bdee0" />
+> Distraction-free "focus mode"
+
+> <img width="1327" height="959" alt="image" src="https://github.com/user-attachments/assets/57810f5e-3ab7-46e2-8dc9-150d0234b0a2" />
+> Beautiful dark mode UI and high-contrast or eInk mode support
+
+<img width="2656" height="1918" alt="image" src="https://github.com/user-attachments/assets/052c9d38-8de6-492b-b8a5-2e4d1f1403cc" />
+> Reading Ruler
 
