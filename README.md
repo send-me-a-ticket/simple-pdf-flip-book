@@ -52,7 +52,7 @@ Browser-based database, offline support and text-to-speech support.
 ---
 
 
-> <img width="1329" height="961" alt="image" src="https://github.com/user-attachments/assets/34198f47-34b2-4541-bc74-322e3b030411" />
+> <img width="1326" height="959" alt="image" src="https://github.com/user-attachments/assets/77c1d0cb-3ab8-4b57-b757-60e1432df7e3" />
 > Elegant UI
 
 > <img width="1329" height="961" alt="image" src="https://github.com/user-attachments/assets/34198f47-34b2-4541-bc74-322e3b030411" />
