@@ -1,5 +1,6 @@
-# simple-pdf-flip-book
-Simple PDF + EPUB Reader with Page turn animation in static HTML using pdf.js/ 3.4.120
+# Flipbook - eBook Reader
+Elegant yet simple PDF + EPUB Reader with Page turn animation in static HTML using pdf.js/ 3.4.120.
+Browser-based database, offline support and text-to-speech support.
 
 ## Features:
 
