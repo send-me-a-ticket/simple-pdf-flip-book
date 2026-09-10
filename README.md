@@ -79,6 +79,6 @@ Browser-based database, offline support and text-to-speech support.
 > <img width="1327" height="959" alt="image" src="https://github.com/user-attachments/assets/57810f5e-3ab7-46e2-8dc9-150d0234b0a2" />
 > Beautiful dark mode UI and high-contrast or eInk mode support
 
-<img width="2656" height="1918" alt="image" src="https://github.com/user-attachments/assets/052c9d38-8de6-492b-b8a5-2e4d1f1403cc" />
+> <img width="2656" height="1918" alt="image" src="https://github.com/user-attachments/assets/052c9d38-8de6-492b-b8a5-2e4d1f1403cc" />
 > Reading Ruler
 
