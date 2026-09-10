@@ -13,14 +13,8 @@
 /* ══════════════════════════════════════════════════════════════════════════
    FLIPBOOK — eBook Reader · second edition
 
-   Warm chrome, cream paper, brick accent. Fraunces for display and numerals,
-   DM Sans for interface copy. Seven themes plus a custom builder; the accent
-   borrows from each book's cover.
+   Created by @yuvvrz [Gaurav Poudel].
 
-   Everything is one static file. Books, positions, highlights, notes and
-   reading time live in this browser (IndexedDB + localStorage) and never
-   leave the device. The only network calls are the CDN libraries, Google
-   Fonts, and — only when you press Define — a public dictionary.
    ══════════════════════════════════════════════════════════════════════════ */
 :root{
   --ink:#241f1b; --muted:#756c63;
@@ -631,8 +625,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   transition:transform .55s var(--ease)}
 #tilt.fast{transition-duration:.12s}
 #tilt.none{transition:none}
-#app[data-zoomed="1"] #stage{cursor:grab}
-#app[data-zoomed="1"] #stage.panning{cursor:grabbing}
+/* Magnified: the open hand marks where a left drag moves the page (margins and
+   the room around the book). Over text the left button still selects, so the
+   I-beam is shown there; the right button, a finger, or Alt+drag grabs the page
+   from anywhere. touch-action:none keeps one-finger pans from being taken over
+   by the browser. */
+#app[data-zoomed="1"] #stage{cursor:grab;touch-action:none}
+#app[data-zoomed="1"] #stage :is(.tlayer.live,.leaf-shadow){cursor:text}
+#app[data-zoomed="1"] #stage.panning,#app[data-zoomed="1"] #stage.panning :is(.tlayer.live,.tlayer span,.leaf-shadow){cursor:grabbing}
 #book.arrive{animation:arrive .8s var(--ease) both}
 @keyframes arrive{0%{opacity:0;transform:translateX(-50%) translateY(26px) scale(.94) rotateX(6deg)}100%{opacity:1;transform:translateX(-50%)}}
 /* Room light: a soft pool of the current accent behind the book. */
@@ -854,6 +854,23 @@ input[type=range].hue::-webkit-slider-thumb{-webkit-appearance:none;width:16px;h
 #seltools .st:hover{background:rgba(255,255,255,.14)}
 #seltools .st.danger:hover{background:#c54c40}
 #seltools .st[hidden]{display:none}
+/* Docked along the bottom on phones (and when the bubble fits neither above
+   nor below the passage). --dock is the height of the page controls beneath. */
+#seltools.docked{left:0;right:0;top:auto;bottom:calc(var(--dock,0px) + 12px + env(safe-area-inset-bottom,0px));
+  transform:none;width:fit-content;max-width:calc(100% - 16px);margin-inline:auto;
+  flex-wrap:wrap;justify-content:center;row-gap:8px;padding:10px;animation:dock-in .2s var(--ease)}
+#seltools.docked::after{display:none}
+/* Colours on one row, actions on the next. */
+#seltools.docked .sep{display:block;flex-basis:100%;height:0;margin:0;background:none}
+#seltools.docked .st{padding:10px 11px}
+@keyframes dock-in{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+/* Fingers need larger targets than a mouse. */
+@media(pointer:coarse){
+  #seltools{gap:6px;padding:8px;touch-action:manipulation}
+  #seltools .st{padding:10px 13px;min-height:42px;font-size:13.5px}
+  #seltools .hl-dot{width:34px;height:34px}
+  #seltools .sep{height:26px}
+}
 @keyframes pop-in{from{opacity:0;scale:.92}to{opacity:1;scale:1}}
 
 /* ── popover ─────────────────────────────────────────────────────────── */
@@ -1029,10 +1046,114 @@ input[type=range].hue::-webkit-slider-thumb{-webkit-appearance:none;width:16px;h
   .brand-mark{animation:none!important}
   #tilt{transition:none}
 }
+/* Third edition: a reading room, with the library as its front door. */
+[data-theme="atelier"]{--accent:#506247;--accent-soft:rgba(80,98,71,.12);--board-a:#536749;--board-b:#2e402d;--stage:#b6b4a6;--stage-dark:#878b7a}
+html{color-scheme:light}html[data-dark="1"]{color-scheme:dark}
+.brand-mark{animation:none;background:var(--accent);width:25px;height:30px}
+.brand strong{font-size:23px}.brand small{font-size:8px;letter-spacing:.2em}
+.bar{padding:12px 24px}.ico,.nav{min-height:44px;min-width:44px}.chip{min-height:40px}
+.ico:disabled,.nav:disabled{opacity:.35;cursor:default}button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.skip-link{position:fixed;top:10px;left:12px;z-index:9999;background:var(--paper);color:var(--ink);padding:14px 20px;transform:translateY(-160%);border-radius:8px}
+.skip-link:focus{transform:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+#app[data-home="1"]{background:var(--chrome-solid);grid-template-rows:auto 1fr}
+#app[data-home="1"]::before{display:none}
+#app[data-home="1"] .brand-text,#app[data-home="1"] .brand small{display:block}
+#app[data-home="1"] #cmdBtn,#app[data-home="1"] #typeBtn{display:inline-flex}
+#app[data-home="1"] #stage{scroll-behavior:smooth}
+#app[data-home="1"] #stage{display:block;overflow-y:auto;padding:0 40px 32px;perspective:none;scrollbar-gutter:stable}
+#app[data-home="1"] #grain,#app[data-home="1"] #bottombar,#app[data-home="1"] #tilt{display:none}
+#app[data-home="1"] #topbar{background:var(--chrome-solid);gap:14px;padding:18px 40px}
+#app[data-home="1"] #topbar> :is(#find,.sep,#markBtn,#tocBtn,#notesBtn,#listenBtn,#viewBtn,#focusBtn,#fsBtn,#zoomBtn,#libBtn,#mobileMenuBtn){display:none}
+#app[data-home="1"] #status{display:block;font-size:11px;margin-left:14px}
+#app[data-home="1"] #cmdBtn .lbl{display:inline}
+#app[data-home="1"] #creatorCredit{position:static;display:block;translate:none;width:fit-content;margin:20px auto 0;box-shadow:none;color:var(--muted);background:none;border:0;font-size:10px;padding:0}
+#welcome,#welcome[data-shelf="0"],#welcome[data-shelf="1"]{width:min(1180px,100%);max-height:none;overflow:visible;margin:auto;padding:0;gap:24px;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;color:var(--ink);text-align:left}
+.room-heading{display:flex;align-items:center;justify-content:space-between;padding-top:28px;color:var(--muted);font-size:11px}
+.eyebrow{display:block;font-size:9px;font-weight:600;letter-spacing:.16em;line-height:1.6;color:var(--muted)}
+#welcome .hero,#welcome[data-shelf="1"] .hero{display:grid;grid-template-columns:1.12fr 1fr;align-items:center;justify-items:stretch;gap:20px;min-height:365px;text-align:left;padding:32px 46px;border:1px solid var(--line);border-radius:16px;background:var(--paper-2);overflow:hidden;position:relative}
+.hero-copy{position:relative;z-index:2}.edition-label{font-size:11px;color:var(--accent);display:flex;align-items:center;gap:8px}.edition-label i,.privacy-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+#welcome h1,#welcome[data-shelf="1"] h1{font:500 clamp(44px,4.7vw,68px)/1.02 var(--display);letter-spacing:-.055em;margin:20px 0 18px}#welcome[data-shelf="1"] h1 br{display:block}
+#welcome h1 em{color:var(--accent);font-weight:500}
+#welcome .hero-copy p{color:var(--muted);font-size:13px;line-height:1.8;max-width:355px;margin:0 0 24px}
+.hero-actions{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+#welcome .go,#welcome[data-shelf="1"] .go{padding:13px 21px;background:var(--accent);color:var(--on-accent);border-radius:6px;box-shadow:0 4px 8px #0000000c;font-size:12px;min-height:46px;justify-content:center;gap:26px;cursor:pointer}
+.sample-link{font-size:12px;padding:12px 0;display:flex;gap:16px;align-items:center}.sample-link:hover{color:var(--accent);text-decoration:underline}
+.local-caption{display:block;font-size:10px;color:var(--muted);margin-top:16px;line-height:1.8}
+.book-art{position:relative;height:330px;display:grid;place-items:center;isolation:isolate}.art-orbit{position:absolute;width:320px;height:320px;border:1px solid var(--line);border-radius:50%;z-index:-1}.art-orbit:after{content:"";position:absolute;inset:24px;border:1px solid var(--line);border-radius:50%}
+.art-book{width:202px;height:280px;background:#354b3b;color:#e9dfbb;transform:rotate(-11deg);border-radius:3px 7px 7px 3px;box-shadow:inset 7px 0 8px #0004,inset 9px 0 1px #ffffff17,5px 3px 0 #c6bda4,8px 4px 0 #ece5d2,11px 5px 0 #3a4e3d,20px 26px 36px #25342735;padding:17px 15px 17px 23px}
+.art-border{height:100%;border:1px solid #d9d0aa66;padding:13px 12px;display:flex;align-items:center;flex-direction:column;text-align:center}.art-series{font-size:6px;letter-spacing:.13em}.art-book strong{font:400 28px/1.07 var(--display);letter-spacing:-.035em;margin-top:21px}.art-book em{font-weight:400}.art-flower{font-size:62px;line-height:1;margin:10px 0 11px;color:#caba87}.art-author{font-size:5px;letter-spacing:.15em}.art-star{position:absolute;right:12%;top:28px;color:#a79260;font-size:37px}.art-caption{position:absolute;right:0;bottom:14px;transform:rotate(-90deg);transform-origin:bottom right;font-size:7px;letter-spacing:.3em;color:var(--muted)}.art-shadow{position:absolute;width:180px;height:24px;border-radius:50%;background:#273b3426;filter:blur(15px);bottom:4px;transform:rotate(-8deg)}
+.room-dashboard{display:grid;grid-template-columns:1.12fr 1fr;gap:18px}.resume-card,.goal-card{display:flex;align-items:center;gap:18px;text-align:left;padding:20px 22px;border:1px solid var(--line);border-radius:10px;background:var(--paper);min-width:0}.resume-card>span:nth-child(2){min-width:0}.resume-card strong,.goal-card strong{display:block;font:500 19px/1.3 var(--display);margin:4px 0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.resume-card small,.goal-card small{display:block;color:var(--muted);font-size:10px;line-height:1.5}.dash-icon{display:grid;place-items:center;border:1px solid var(--line);background:var(--accent-soft);color:var(--accent);border-radius:7px;width:46px;height:58px;font-size:24px;flex-shrink:0}.dash-arrow{margin-left:auto;color:var(--accent)}.goal-dial{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--accent) var(--goal,0%),var(--line) 0);position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;isolation:isolate;flex-shrink:0}.goal-dial:before{content:"";position:absolute;inset:4px;background:var(--paper);border-radius:50%;z-index:-1}.goal-dial b{font:500 23px/1.2 var(--display)}.goal-dial small{font-size:7px;letter-spacing:.12em}
+#shelf,#welcome[data-shelf="0"] #shelf{display:block}.shelf-head{margin:10px 0 16px;align-items:center}.shelf-head h2{font:500 27px/1.2 var(--display);color:var(--ink);letter-spacing:-.035em}.heading-dot{color:var(--accent)}#shelfMeta{color:var(--muted);font-size:10px}.text-action{font-size:11px;color:var(--accent);min-height:44px;padding:8px}.shelf-tools{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px;flex-wrap:wrap}.shelf-filters,.shelf-search{display:flex;gap:5px;align-items:center}.shelf-filters .chip{font-size:11px;padding:0 13px;border-radius:6px}.shelf-filters .chip[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:transparent}.shelf-search input,.shelf-search select{min-height:38px;padding:8px 10px;border:1px solid var(--line);background:var(--paper);border-radius:6px;font-size:10px;min-width:0}.shelf-search input{width:170px}.shelf-search select{max-width:145px}.shelf-search button{min-width:40px}
+#shelfEmpty{border:1px dashed var(--line);border-radius:10px;text-align:center;padding:28px 16px;background:color-mix(in srgb,var(--paper) 45%,transparent)}.empty-book{display:block;font:26px var(--display);color:var(--accent);margin-bottom:10px}#shelfEmpty strong{font:500 19px var(--display)}#shelfEmpty p{color:var(--muted);font-size:11px;line-height:1.8;margin:10px auto 16px}.shelf-row:empty{display:none}#welcome .shelf-row{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:26px;padding:6px 0 20px}#welcome .tome{color:var(--ink)}#welcome .tome .meta span{color:var(--muted);line-height:1.6}.tome .open-tome{padding:0;text-align:inherit;color:inherit;width:100%;display:grid;gap:12px;min-width:0}.tome .cov{color:#fff7e8}.tome .rm{width:32px;height:32px;top:6px;left:auto;right:6px}.tome .meta b{font-size:13px}.tome:focus-visible{outline-color:var(--accent)}
+#shelfRow.list-view{grid-template-columns:1fr;gap:8px}#shelfRow.list-view .tome{border-bottom:1px solid var(--line);padding:8px 42px 14px 0}#shelfRow.list-view .open-tome{grid-template-columns:44px 1fr;align-items:center;gap:18px}#shelfRow.list-view .cov{width:44px;height:62px}#shelfRow.list-view .typeset{display:none}#shelfRow.list-view .rm{opacity:1;transform:none}
+.room-bottom{border-top:1px solid var(--line);padding-top:20px;display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:10px;align-items:center;flex-wrap:wrap}.room-bottom .privacy-dot{margin-right:7px}.room-bottom>div{display:flex;gap:20px;flex-wrap:wrap}.room-bottom button{font-size:10px;color:var(--muted);padding:8px 0;min-height:32px}.room-bottom button:hover{color:var(--accent)}
+.edition-dialog{color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px;width:min(530px,calc(100vw - 28px));max-height:calc(100dvh - 40px);overflow:auto;box-shadow:0 30px 90px #0004;font-family:var(--ui)}.edition-dialog::backdrop{background:#161e1973;backdrop-filter:blur(5px)}.edition-dialog header{display:flex;align-items:center;gap:16px;margin-bottom:20px}.edition-dialog h2{font:500 29px/1.2 var(--display);margin:0;flex:1}.edition-dialog p{font-size:13px;line-height:1.7;color:var(--muted)}.edition-dialog .setting-row{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--line);font-size:13px}.setting-row small{display:block;font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}.setting-row input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex-shrink:0}.setting-row select{padding:9px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}.dialog-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.primary-action{background:var(--accent);color:var(--on-accent);border-radius:7px;padding:12px 20px;min-height:44px;font-size:12px}.timer-display{font:500 76px/1.2 var(--display);letter-spacing:-.06em;text-align:center;margin:24px 0 8px;font-variant-numeric:tabular-nums}.timer-description{text-align:center}.timer-presets{display:flex;justify-content:center;gap:8px}.timer-presets .chip[aria-pressed=true]{color:var(--on-accent);background:var(--accent)}#sessionBadge{position:fixed;right:20px;bottom:82px;z-index:55;background:var(--paper);border:1px solid var(--line);border-radius:999px;box-shadow:0 6px 24px #0002;padding:10px 16px;color:var(--accent);font-variant-numeric:tabular-nums}#textDialog{width:min(780px,calc(100vw - 28px))}#accessibleText{font:20px/1.85 Georgia,serif;user-select:text;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 6px}#textNavigation{display:flex;gap:12px;align-items:center;justify-content:space-between}
+html[data-reduce="1"] *,html[data-reduce="1"] *:before,html[data-reduce="1"] *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}html[data-contrast="1"]{--ink:#111;--muted:#343a32;--paper:#fff;--paper-2:#fff;--chrome-solid:#fff;--chrome:#fff;--accent:#244525;--on-accent:#fff;--line:#606860;--accent-soft:#dce9d9}html[data-contrast="1"][data-dark="1"]{--ink:#fff;--muted:#e0e0e0;--paper:#101410;--paper-2:#151a15;--chrome-solid:#101410;--chrome:#101410;--accent:#c8efb8;--on-accent:#101410;--line:#a3afa0;--accent-soft:#283c24}html[data-large="1"] :is(.ico,.chip,.pill,.nav,.x){min-height:48px;min-width:48px}html[data-large="1"] .bar{flex-wrap:wrap}
+@media(hover:none){.tome .rm{opacity:1;transform:none}}
+@media(max-width:1000px){#welcome .hero,#welcome[data-shelf="1"] .hero{padding:26px 30px}.book-art{transform:scale(.88)}#app[data-home="1"] #status{display:none}.bar{gap:4px;padding:8px 12px}#sessionBtn{display:none}.room-dashboard{gap:12px}.resume-card,.goal-card{padding:18px 16px;gap:12px}.resume-card strong,.goal-card strong{font-size:16px}.shelf-search{flex:1}.shelf-search input{flex:1}.shelf-tools{gap:14px}}
+@media(max-width:700px){#app[data-home="1"] #topbar{padding:14px 20px;gap:8px}#app[data-home="1"] #stage{padding:0 20px 24px}#app[data-home="1"] #statsBtn,#app[data-home="1"] #cmdBtn .lbl,#app[data-home="1"] #topbar label.pill{display:none}.room-heading{padding-top:10px}.room-heading>span:last-child{font-size:9px}.eyebrow{font-size:8px;letter-spacing:.12em}#welcome{gap:18px}#welcome .hero,#welcome[data-shelf="1"] .hero{grid-template-columns:1fr;min-height:0;padding:26px}.book-art{display:none}#welcome h1,#welcome[data-shelf="1"] h1{font-size:51px}#welcome .hero-copy p{max-width:100%}.room-dashboard{grid-template-columns:1fr}.goal-card{padding:14px 18px}.goal-dial{width:54px;height:54px}.resume-card strong,.goal-card strong{font-size:18px}.shelf-head h2{font-size:24px}.shelf-search{flex-wrap:wrap;width:100%}.shelf-search input{min-width:100px}.shelf-search select{max-width:125px}.shelf-filters{width:100%;justify-content:space-between}.shelf-filters .chip{padding:0 10px}#welcome .shelf-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 18px}.room-bottom{font-size:9px}.room-bottom>div{gap:20px}.room-bottom button{font-size:11px}.local-caption{font-size:9px}.hero-actions{gap:20px}.edition-dialog{padding:20px}.edition-dialog h2{font-size:25px}.bar .ico{min-width:38px;width:38px}#topbar #accessBtn{display:none}#app[data-home="1"] #accessBtn{display:inline-flex}}
+@media(forced-colors:active){.goal-dial,.art-book,.primary-action{border:1px solid ButtonText}.chip[aria-pressed=true]{outline:2px solid Highlight}.tome .prog i{background:Highlight}}
+@media(max-width:1700px){#app[data-home="0"] #status{display:none}}
+@media(max-width:700px){#app[data-view="1"]:not([data-zoomed="1"]) #tilt{clip-path:inset(-55px calc(var(--page-w) / -2 - 5px))}#app[data-view="1"] #edges{display:none}#app[data-home="1"] #topbar{gap:6px}#app[data-home="1"] .brand strong{font-size:23px}#app[data-home="1"] .brand{gap:10px}#app[data-home="1"] .brand small{font-size:7px}#app[data-home="1"] #cmdBtn{padding:0 10px}#app[data-home="1"] #sessionBtn{display:none}}
+@media(max-width:360px){#app[data-home="1"] #typeBtn{display:none}#app[data-home="1"] #topbar{padding-left:16px;padding-right:16px}}
+html[data-contrast="1"]{--ink:#111!important;--muted:#343a32!important;--paper:#fff!important;--paper-2:#fff!important;--chrome-solid:#fff!important;--chrome:#fff!important;--accent:#244525!important;--on-accent:#fff!important;--line:#606860!important;--accent-soft:#dce9d9!important}
+html[data-contrast="1"][data-dark="1"]{--ink:#fff!important;--muted:#e0e0e0!important;--paper:#101410!important;--paper-2:#151a15!important;--chrome-solid:#101410!important;--chrome:#101410!important;--accent:#c8efb8!important;--on-accent:#101410!important;--line:#a3afa0!important;--accent-soft:#283c24!important}
+/* Shared header geometry: changing rooms never moves the toolbar's baseline. */
+#app #topbar,#app[data-home="1"] #topbar{height:68px;min-height:68px;padding:11px 24px;gap:9px}
+html[data-large="1"] #app #topbar{height:auto;min-height:72px}
+@media(max-width:1099px){#app #topbar,#app[data-home="1"] #topbar{height:60px;min-height:60px;padding:8px 12px;gap:4px}}
+@media(max-width:360px){#app[data-home="1"] #topbar{padding-inline:12px}}
+#minimap{--mini-radius:10px;border-radius:var(--mini-radius)}
+#miniVp{border-radius:var(--mini-radius);min-width:4px;min-height:4px}
+#minimap:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.curl-leaf{transition:none!important;pointer-events:none;user-select:none;transform:none!important}
+.curl-band{position:absolute;top:0;height:100%;transform-style:preserve-3d;transform-origin:left center;will-change:transform}
+.curl-band .face{box-shadow:none;border:0;pointer-events:none}
+.curl-band .curl-texture{position:absolute;top:0;width:var(--page-w);height:var(--page-h);pointer-events:none}
+.curl-band .curl-shade{position:absolute;inset:0;pointer-events:none;background:#281c14;opacity:0;z-index:8}
+.curl-band .back .curl-shade{background:#fff9e9}
+#app[data-view="2"] #stage{perspective:6000px}
+.turn-options{display:grid;gap:12px}.turn-options label{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px}
+.turn-options select{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:9px;max-width:180px}
+#turnQueue{position:absolute;bottom:12px;left:50%;translate:-50% 0;z-index:35;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 14px;border-radius:99px;box-shadow:0 4px 16px #0002;font-size:11px}
+#turnQueue:hover{background:var(--accent-soft)}
+/* Separate front, page block, spine and backboard; the button stays still. */
+.tome{perspective:900px;transform:none!important;transform-style:flat;isolation:isolate}
+.tome .open-tome{position:relative;z-index:0;perspective:900px;transform-style:preserve-3d}
+.shelf-book{position:relative;display:block;aspect-ratio:2/3;width:100%;transform-style:preserve-3d;transform:rotateY(0deg);transition:transform .65s var(--ease);--thickness:18px}
+.shelf-book .cov{position:absolute;inset:0;transform:translateZ(calc(var(--thickness) / 2));backface-visibility:hidden;box-shadow:inset 6px 0 8px -6px #0008,8px 12px 22px -12px #0007}
+.shelf-pages{position:absolute;top:3px;bottom:3px;right:0;width:var(--thickness);transform:rotateY(90deg);transform-origin:right center;background:repeating-linear-gradient(90deg,#e7ddc8 0px,#e7ddc8 1px,#fff9ee 1px,#fff9ee 3px);translate:0 0 calc(var(--thickness) / -2)}
+.shelf-back{position:absolute;inset:0;background:var(--cb,#354637);border-radius:3px 8px 8px 3px;transform:translateZ(calc(var(--thickness) / -2)) rotateY(180deg);box-shadow:-8px 10px 26px #0003;backface-visibility:hidden}
+.shelf-spine{position:absolute;left:0;top:0;bottom:0;width:var(--thickness);transform-origin:left center;transform:translateZ(calc(var(--thickness) / 2)) rotateY(90deg);background:linear-gradient(90deg,#0005,transparent 40%,#ffffff18),var(--ca,#354637);color:#fff5dd;writing-mode:vertical-rl;padding:10px 2px;font:8px var(--ui);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;backface-visibility:visible}
+.tome:hover .shelf-book,.tome .open-tome:focus-visible .shelf-book{transform:translateY(-7px) rotateY(-29deg) rotateX(5deg)}
+.tome:hover .cov{box-shadow:inset 6px 0 8px -6px #0008,12px 16px 30px -12px #0008}
+.tome .rm{z-index:5}.tome .open-tome:focus-visible{outline-offset:6px}
+#shelfRow.list-view .shelf-book{width:44px;height:62px;--thickness:7px}
+#shelfRow.list-view .shelf-book .cov{width:44px;height:62px}
+#shelfRow.list-view .shelf-spine{font-size:4px;padding:4px 0}
+html[data-reduce="1"] .shelf-book,html[data-reduce="1"] .tome:hover .shelf-book{transform:none}
+@media(prefers-reduced-motion:reduce){.shelf-book,.tome:hover .shelf-book{transform:none}}
+/* Clip paper and boards to the same contour, including anti-aliased corners. */
+#book{border-radius:9px;background:transparent}
+.flipper.right:not(.curl-leaf)>.face{border-radius:0 9px 9px 0}
+.flipper.right:not(.curl-leaf)>.face.back{border-radius:9px 0 0 9px}
+.flipper.left:not(.curl-leaf)>.face{border-radius:9px 0 0 9px}
+.flipper.left:not(.curl-leaf)>.face.back{border-radius:0 9px 9px 0}
+.face>.leaf{border-radius:inherit}
+.stack{top:8px;bottom:8px}
+.shelf-pages{top:8px;bottom:8px;right:2px}
+.shelf-book .cov{clip-path:inset(0 round 3px 8px 8px 3px)}
+/* PDF line-break boxes have no glyphs and must not paint selection rectangles. */
+.tlayer br::selection,.tlayer .eoc::selection{background:transparent}
+.tlayer br::-moz-selection,.tlayer .eoc::-moz-selection{background:transparent}
+.tlayer span.markedContent{top:0;height:0}
 </style>
 </head>
 <body>
-<div id="app" data-view="2" data-focus="0">
+<a class="skip-link" href="#stage">Skip to reading room</a>
+<div id="app" data-view="2" data-focus="0" data-home="1">
 
   <header class="bar" id="topbar">
     <button class="brand" id="homeBtn" title="Home — your shelf (H)" aria-label="Home"><span class="brand-mark"></span>
@@ -1098,29 +1219,33 @@ input[type=range].hue::-webkit-slider-thumb{-webkit-appearance:none;width:16px;h
     <button class="ico" id="mobileMenuBtn" title="Reader settings" aria-label="Reader settings" aria-expanded="false">☰</button>
   </header>
 
-  <main id="stage">
+  <main id="stage" tabindex="-1" aria-label="Reading room">
     <div id="grain"></div>
     <div id="work"><i></i></div>
 
     <section id="welcome" data-shelf="0">
+      <div class="room-heading"><span class="eyebrow">THE PERSONAL READING ROOM</span><span id="roomDate"></span></div>
       <div class="hero">
-        <div class="mini" aria-hidden="true"></div>
-        <h1>Your books,<br> beautifully present.</h1>
-        <p>Open a PDF or EPUB and read it like a physical object — a real cover,
-           page depth you can see, animated turns, and a riffling track. Highlight,
-           annotate, listen, and pick up exactly where you left off.</p>
-        <label class="go"><input type="file" id="file2" hidden multiple
-          accept=".pdf,.epub,application/pdf,application/epub+zip">
-          <span class="go-first">Open your first book</span><span class="go-more">Add a book</span> <span aria-hidden="true">→</span></label>
-        <p class="hints">
-          <kbd>←</kbd> <kbd>→</kbd> turn · <kbd>C</kbd> contents · <kbd>T</kbd> type ·
-          <kbd>P</kbd> layout · <kbd>F</kbd> fullscreen · <kbd>⌘K</kbd> commands · <kbd>?</kbd> all keys</p>
+        <div class="hero-copy"><span class="edition-label"><i></i> A little space for a good book</span>
+          <h1>Less noise.<br>More <em>pages.</em></h1>
+          <p>A place to get wonderfully lost. Bring your books, settle into your favourite type, and make a little time for yourself.</p>
+          <div class="hero-actions"><label class="go"><input type="file" id="file2" hidden multiple accept=".pdf,.epub,application/pdf,application/epub+zip">Open a book <span aria-hidden="true">↗</span></label>
+          <button class="sample-link" id="sampleBtn">Try a sample <span aria-hidden="true">→</span></button></div>
+          <span class="local-caption">PDF &amp; EPUB · Drag files anywhere · Stored in this browser</span>
+        </div>
+        <div class="book-art" aria-hidden="true"><div class="art-orbit"></div><span class="art-star">✳</span><div class="art-shadow"></div><div class="art-book"><div class="art-border"><span class="art-series">THE FLIPBOOK EDITIONS · № 01</span><strong>The Art<br>of Paying<br><em>Attention</em></strong><div class="art-flower">✳</div><span class="art-author">A FIELD GUIDE TO SLOW READING</span></div></div><span class="art-caption">ONE PAGE AT A TIME.</span></div>
+      </div>
+      <div class="room-dashboard">
+        <button class="resume-card" id="resumeBook"><span class="dash-icon" aria-hidden="true">↗</span><span><span class="eyebrow" id="resumeLabel">YOUR NEXT CHAPTER</span><strong id="resumeTitle">Start a little reading ritual</strong><small id="resumeMeta">Explore the sample. Make yourself at home.</small></span><span class="dash-arrow" aria-hidden="true">→</span></button>
+        <button class="goal-card" id="homeGoal" aria-label="View reading goal and statistics"><span class="goal-dial" id="homeGoalDial"><b id="homeMinutes">0</b><small>MIN</small></span><span><span class="eyebrow">A LITTLE, EVERY DAY</span><strong id="homeGoalText">Your daily reading goal</strong><small id="homeStreak">Every page is a good beginning.</small></span></button>
       </div>
       <div id="shelf" aria-label="Your shelf">
-        <div class="shelf-head"><h2>Your shelf</h2><span id="shelfMeta"></span></div>
+        <div class="shelf-head"><h2>Your library<span class="heading-dot">.</span></h2><span id="shelfMeta" role="status"></span><span class="spacer"></span><button class="text-action" id="shelfAdd">+ Add books</button></div>
+        <div class="shelf-tools"><div class="shelf-filters" role="group" aria-label="Filter library"><button class="chip" data-filter="all" aria-pressed="true">All books</button><button class="chip" data-filter="reading" aria-pressed="false">Reading</button><button class="chip" data-filter="unread" aria-pressed="false">Unread</button><button class="chip" data-filter="finished" aria-pressed="false">Finished</button></div><div class="shelf-search"><input type="search" id="shelfSearch" placeholder="Find in your library…" aria-label="Search library by title or author"><select id="shelfSort" aria-label="Sort library"><option value="recent">Recently read</option><option value="title">Title A–Z</option><option value="author">Author A–Z</option><option value="progress">Reading progress</option></select><button class="chip" id="shelfView" aria-label="Use list view" aria-pressed="false">☷</button></div></div>
         <div id="shelfRow" class="shelf-row"></div>
-        <div class="ledge" aria-hidden="true"></div>
+        <div id="shelfEmpty"><span class="empty-book" aria-hidden="true">＋</span><strong>A shelf full of possibilities.</strong><p>Add your first book, or explore our short sample.<br>Your books and reading progress stay in this browser.</p><button class="chip" id="emptySample">Read the sample →</button></div>
       </div>
+      <div class="room-bottom"><span><i class="privacy-dot"></i> Your library. Your device. Your own pace.</span><div><button id="homeSession">Reading timer</button><button id="homeAccess">Accessibility</button><button id="homeKeys">Keyboard guide ↗</button></div></div>
     </section>
     <a href="https://bio.yuvvrz.com" id="creatorCredit" class="creator-credit">created by @yuvvrz</a>
 
@@ -1459,7 +1584,7 @@ const FACES = [
 const HL_COLORS = { amber: "#f5b935", rose: "#ef7a8a", mint: "#5fd39a", sky: "#6db6ff" };
 
 const S = {
-  src: null, page: 2, side: 0, state: "shelf", animating: false, queue: 0,
+  src: null, page: 2, side: 0, state: "shelf", animating: false, queue: 0, motionEpoch: 0,
   riffling: false, resume: 0, key: "", id: "", wpp: 300,
   orient: Store.get("flipbook.layout", "auto"),
   theme: Store.get("flipbook.theme", "atelier"),
@@ -1683,7 +1808,7 @@ async function awaitStyles(root) {
 
 const blankLeaf = () => { const w = el("div", "leaf"); w.append(el("div", "endpaper")); return w; };
 const pendingLeaf = (t) => { const w = el("div", "leaf"); w.append(el("div", "pending", t || "…")); return w; };
-const coverHint = (t) => el("div", "cover-hint", t);
+const coverHint = (t) => {const hint=el("div","cover-hint",t);hint.hidden=S.src?.kind==='pdf' && S.src.realPages<=2;return hint;};
 function hueOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
 const rawText = (n) => { let o = ""; const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); while (w.nextNode()) o += w.currentNode.nodeValue; return o; };
 
@@ -1803,8 +1928,18 @@ async function makeEpubSource(buf, label, opts = {}) {
       try { doc = new DOMParser().parseFromString(xhtml, "application/xhtml+xml"); } catch {}
       if (!doc || doc.querySelector("parsererror")) { try { doc = new DOMParser().parseFromString(xhtml, "text/html"); } catch {} }
       if (!doc) { sec.body = el("div"); return sec; }
-      sec.headNodes = doc.head ? [...doc.head.children].filter((n) => n.tagName === "STYLE" ||
-        (n.tagName === "LINK" && /stylesheet/i.test(n.getAttribute("rel") || ""))) : [];
+      /* Books are documents, never applications. Strip active markup before
+         importing into the reader's same-origin shadow roots. */
+      doc.querySelectorAll('script,iframe,object,embed,form,base,meta,foreignObject,animate,animateMotion,animateTransform,set').forEach(n => n.remove());
+      doc.querySelectorAll('*').forEach(n => {
+        for (const a of [...n.attributes]) {
+          const key = a.name.toLowerCase(), value = a.value.replace(/[\u0000-\u0020]/g, '').toLowerCase();
+          if (key.startsWith('on') || key === 'srcdoc' || key === 'autofocus' ||
+              (['href','src','xlink:href','action','formaction'].includes(key) && /^(javascript:|vbscript:|data:(text\/html|image\/svg\+xml))/.test(value))) n.removeAttribute(a.name);
+        }
+      });
+      sec.headNodes = doc.head ? [...doc.head.children].filter((n) => n.localName.toLowerCase() === "style" ||
+        (n.localName.toLowerCase() === "link" && /stylesheet/i.test(n.getAttribute("rel") || ""))) : [];
       sec.body = doc.body || doc.documentElement || el("div");
       sec.raw = rawText(sec.body);
       sec.words = (sec.raw.match(/\S+/g) || []).length;
@@ -2062,6 +2197,7 @@ async function makeEpubSource(buf, label, opts = {}) {
     sectionLabel(n) { if (n <= 1) return "Front cover"; if (n >= src.pageCount) return "Colophon"; const { sec } = locate(n - 2); return SEC[sec].label || title; },
     sectionOf(n) { if (n <= 1 || n >= src.pageCount) return null; const { sec } = locate(n - 2); return sec; },
     async textOf(sec) { await loadSection(sec); return SEC[sec].raw || ""; },
+    async accessibleTextOf(sec) { await loadSection(sec); const body = SEC[sec].body; const blocks = [...body.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,figcaption')].filter(n => !n.parentElement?.closest('li,blockquote,pre')); return blocks.length ? blocks.map(n => n.textContent.trim()).filter(Boolean).join('\n\n') : body.textContent; },
     sections() { return SEC.map((s, i) => ({ i, label: s.label || ((s.item.properties || []).includes?.("nav") ? "Contents" : i === 0 ? title : `Section ${i + 1}`), pages: s.pages || 0, words: s.words, start: s.pages ? globalOf(i, 0) : null, skip: s.skip })); },
     contentPages: () => contentPages,
     destroy() { token++; try { book.destroy(); } catch {} if (coverUrl) { try { URL.revokeObjectURL(coverUrl); } catch {} } },
@@ -2077,7 +2213,7 @@ async function makePdfSource(buf, label) {
   const pdfjs = window["pdfjs-dist/build/pdf"] || window.pdfjsLib;
   if (!pdfjs) throw new Error("PDF.js did not load. Check the network, then reload.");
   pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
-  const doc = await fence(pdfjs.getDocument({ data: buf }).promise, 45000, null);
+  const doc = await fence(pdfjs.getDocument({ data: buf, isEvalSupported: false }).promise, 45000, null);
   if (!doc) throw new Error("This PDF could not be parsed. It may be corrupt or password protected.");
   const M = doc.numPages;
   const coverOnly = M === 1;
@@ -2283,6 +2419,84 @@ function setSlotEl(slot, leaf) { disposeSlot(slot); slot.replaceChildren(leaf); 
 function clearSlots() { disposeSlot($("#slotL")); disposeSlot($("#slotR")); $("#slotL").replaceChildren(); $("#slotR").replaceChildren(); }
 function clearFlippers() { $("#book").querySelectorAll(".flipper").forEach((n) => n.remove()); }
 
+/* Temporary visual strips bend in 3D. Resting pages remain their original,
+   selectable DOM. Shadow content is copied; PDF strips share one image URL. */
+const PaperCurl = (() => {
+  function snapshot(node, images) {
+    if (node.nodeType !== 1) return node.cloneNode(true);
+    if (node.matches('.tlayer,.pdf-link')) return document.createDocumentFragment();
+    if (node.tagName === 'CANVAS') {
+      if (!images.has(node)) { try { images.set(node, node.toDataURL()); } catch { images.set(node, ''); } }
+      const img = el('img', node.className); img.src = images.get(node); img.alt = ''; img.style.cssText = node.style.cssText;
+      return img;
+    }
+    const copy = node.cloneNode(false); copy.removeAttribute('id');
+    for (const child of node.childNodes) copy.append(snapshot(child, images));
+    if (node.shadowRoot) { const shadow = copy.attachShadow({mode:'open'}); for (const child of node.shadowRoot.childNodes) shadow.append(snapshot(child, images)); }
+    if (node.matches('.pdf-fit')) {
+      const w = parseFloat(node.style.width), h = parseFloat(node.style.height), scale = Math.min(G.pageW / w, G.pageH / h);
+      copy.style.transform = `scale(${scale})`; copy.style.left = (G.pageW - w * scale) / 2 + 'px'; copy.style.top = (G.pageH - h * scale) / 2 + 'px';
+    }
+    return copy;
+  }
+  function create(front, back, side, layered = false) {
+    const f = el('div','flipper curl-leaf ' + side), bands = [], images = new Map();
+    f.setAttribute('aria-hidden','true'); f.inert = true;
+    const curved = S.room.curve !== false && !S.reduce, count = curved ? (layered ? 12 : 20) : 1;
+    const width = G.pageW / count, right = side === 'right';
+    // Build detached templates once, including shadow DOM and shared PDF images.
+    const frontTemplate = snapshot(front, images), backTemplate = snapshot(back, images);
+    for (let i=0;i<count;i++) {
+      const band=el('div','curl-band'); band.style.width=width+(i===count-1?0:.65)+'px';
+      const crop = right ? i*width : G.pageW-(i+1)*width;
+      const shades=[];
+      for (const [template, offset, cls] of [[frontTemplate,crop,'face'],[backTemplate,G.pageW-crop-width,'face back']]) {
+        const face=el('div',cls), texture=el('div','curl-texture'), shade=el('div','curl-shade');
+        if(i===count-1)face.style.borderRadius=right?(cls==='face'?'0 8px 8px 0':'8px 0 0 8px'):(cls==='face'?'8px 0 0 8px':'0 8px 8px 0');
+        texture.style.left=-offset+'px'; texture.append(snapshot(template,images)); face.append(texture,shade); band.append(face); shades.push(shade);
+      }
+      f.append(band); bands.push({band,shades});
+    }
+    function pose(progress) {
+      const p=clamp(progress,0,1), bend=curved ? Math.sin(Math.PI*p)*1.3 : 0;
+      let x=0,z=0;
+      bands.forEach(({band,shades},i)=>{
+        const a=-Math.PI*p + bend*((i+.5)/count-.45), dx=Math.cos(a)*width, dz=-Math.sin(a)*width;
+        const bx=right?x:G.pageW-x-dx, bz=right?z:z+dz;
+        band.style.transform=`translate3d(${bx.toFixed(3)}px,0,${bz.toFixed(3)}px) rotateY(${(right?a:-a)*180/Math.PI}deg)`;
+        const shade=Math.sin(Math.PI*p)*(.055+.12*(i/count));
+        shades[0].style.opacity=shade.toFixed(3); shades[1].style.opacity=(shade*.65).toFixed(3);
+        x+=dx;z+=dz;
+      });
+      f.dataset.progress=p.toFixed(3);
+    }
+    pose(0);
+    return {f,pose};
+  }
+  function animate(curl, from, to, ms, valid = () => true) {
+    return new Promise(resolve=>{
+      const start=performance.now();
+      function frame(now) {
+        if (!valid() || !curl.f.isConnected) return resolve(false);
+        // Finish the visible sheet smoothly even after scrolling stops; queued turns are discarded separately.
+        const t=ms<=1?1:clamp((now-start)/ms,0,1), eased=t*t*t*(t*(t*6-15)+10);
+        curl.pose(from+(to-from)*eased);
+        if(t<1) requestAnimationFrame(frame);else resolve(true);
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  return {create,animate};
+})();
+
+function turnDuration(base) { return S.reduce ? 1 : Math.round((S.scrollTurning?Math.min(base,S.scrollMs || 120):base) * clamp(Number(S.room.turnSpeed) || 1,.65,1.5)); }
+function syncTurnQueue() {
+  const badge=$('#turnQueue'); if(!badge)return;
+  badge.hidden=!S.queue || !!S.scrollTurning;
+  badge.textContent=`${Math.abs(S.queue)} queued ${S.queue>0?'→':'←'} · Stop (Esc)`;
+}
+function stopQueuedTurns() { S.queue=0; syncTurnQueue(); }
+
 async function surf(n, o) {
   if (!S.src) return blankLeaf();
   if (n < 1 || n > S.src.pageCount) return blankLeaf();
@@ -2401,11 +2615,12 @@ async function turnCoverOnly(dir) {
   const forward = dir > 0;
   if ((forward && S.state !== "closed-front") || (!forward && S.state !== "closed-back")) return;
   S.animating = true;
-  const ms = S.reduce ? 1 : 820, book = $("#book"), f = $("#coverLeaf");
+  const epoch=S.motionEpoch, ms = turnDuration(820), book = $("#book"), f = $("#coverLeaf");
   if (!f) { S.animating = false; return; }
   const back = f.querySelector(".face.back");
   if (forward) back.replaceChildren(backBoard(), coverHint("← Front cover"), el("div", "sheen"));
   else back.replaceChildren(await surf(1, {}), coverHint("Open cover →"), el("div", "sheen"));
+  if(epoch!==S.motionEpoch)return;
 
   book.classList.add("cover-turning", forward ? "from-front" : "from-back");
   book.style.setProperty("--flip-ms", ms + "ms");
@@ -2419,8 +2634,10 @@ async function turnCoverOnly(dir) {
   /* Transfer the visible page block while the cover is almost edge-on. */
   Sound.cover(ms);
   await sleep(Math.max(1, Math.round(ms * .48)));
+  if(epoch!==S.motionEpoch)return;
   book.classList.add("past-half");
   await sleep(Math.max(1, Math.round(ms * .52)) + 30);
+  if(epoch!==S.motionEpoch)return;
   book.classList.remove("cover-turning", "from-front", "from-back", "past-half");
   f.remove();
   if (forward) await showClosedBack(); else await showClosedFront();
@@ -2433,36 +2650,40 @@ async function turnCoverOnly(dir) {
    landed on top of it. That ordering is what removes the flash of the next page
    appearing before the turn has played. */
 async function runFlip(o) {
-  const book = $("#book"), f = el("div", "flipper " + o.side);
-  book.style.setProperty("--flip-ms", o.ms + "ms");
-  f.style.setProperty("--flip-ms", o.ms + "ms");
-  const fr = el("div", "face"); fr.append(o.front, el("div", "sheen"));
-  const bk = el("div", "face back"); bk.append(o.back, el("div", "sheen"));
-  f.append(fr, bk);
-  book.append(f);
-  book.classList.add("turning");
-  if (o.exposed) await o.exposed();
-  if (o.mid) o.mid();
-  await raf();
-  f.classList.add("lit");
-  void f.offsetWidth;
-  f.classList.add(o.side === "right" ? "go-next" : "go-prev");
-  Sound.turn(o.ms);
-  await sleep(o.ms + 20);
-  if (o.covered) await o.covered();
-  f.remove();
-  book.classList.remove("turning");
+  const book=$('#book'), epoch=S.motionEpoch, source=S.src, sheets=o.sheets || [{front:o.front,back:o.back}];
+  const live=()=>S.motionEpoch===epoch && S.src===source;
+  const curls=sheets.map(s=>PaperCurl.create(s.front,s.back,o.side,sheets.length>1 || !!S.scrollTurning));
+  book.style.setProperty('--flip-ms',o.ms+'ms');book.classList.add('turning');
+  curls.forEach((c,i)=>{ c.f.style.zIndex=String(30+curls.length-i);book.append(c.f); });
+  try {
+    if(o.exposed)await o.exposed();if(!live())return false;
+    if(o.mid)o.mid();await raf();Sound.turn(o.ms);
+    await Promise.all(curls.map(async(c,i)=>{
+      if(i)await sleep(S.reduce?0:i*95);
+      if(!live())return;
+      // As each sheet crosses the spine it becomes the top of the turned stack.
+      const pose=c.pose;c.pose=p=>{c.f.style.zIndex=String(p<.5?30+curls.length-i:30+i);pose(p);};
+      await PaperCurl.animate(c,0,1,o.ms,live);
+    }));
+    if(live() && o.covered)await o.covered();
+    return live();
+  } finally {
+    curls.forEach(c=>c.f.remove());
+    for(const s of sheets)for(const leaf of [s.front,s.back])if(!leaf.isConnected)leaf._ro?.disconnect();
+    if(live())book.classList.remove('turning');
+  }
 }
 
 async function openFront() {
   if (S.state !== "closed-front" || S.animating || !S.src) return;
   if (S.src.coverOnly) return turnCoverOnly(1);
   S.animating = true;
-  const ms = S.reduce ? 1 : 820, book = $("#book"), f = $("#coverLeaf");
+  const epoch=S.motionEpoch, ms = turnDuration(820), book = $("#book"), f = $("#coverLeaf");
   const p2 = await surf(2, {});
+  if(epoch!==S.motionEpoch){p2._ro?.disconnect();return;}
   if (f) f.querySelector(".face.back").replaceChildren(p2, el("div", "sheen"));
   S.page = 2; S.side = 0;
-  setSlot($("#slotR"), await surf(3, {}));
+  const p3=await surf(3, {});if(epoch!==S.motionEpoch){p3._ro?.disconnect();return;}setSlot($("#slotR"),p3);
   /* Paper on both panels for the whole rotation. In the single-page view the
      window can see this side, and an empty panel reads as a rendering fault. */
   setSlot($("#slotL"), blankLeaf());
@@ -2478,6 +2699,7 @@ async function openFront() {
     f.classList.add("go-next");
     Sound.cover(ms);
     await sleep(ms + 30);
+    if(epoch!==S.motionEpoch)return;
     setSlotEl($("#slotL"), p2);
     f.remove();
   } else { setSlotEl($("#slotL"), p2); }
@@ -2488,9 +2710,10 @@ async function openFront() {
 async function closeFront() {
   if (S.state !== "open" || S.animating || !S.src) return;
   S.animating = true;
-  const ms = S.reduce ? 1 : 820, book = $("#book");
+  const epoch=S.motionEpoch, ms = turnDuration(820), book = $("#book");
   const front = $("#slotL").firstElementChild || await surf(2, {});
   const back = await surf(1, {});
+  if(epoch!==S.motionEpoch){back._ro?.disconnect();return;}
   const f = el("div", "flipper left");
   const fr = el("div", "face"); fr.append(front, el("div", "sheen"));
   const bk = el("div", "face back"); bk.append(back, coverHint("Open cover →"), el("div", "sheen"));
@@ -2507,6 +2730,7 @@ async function closeFront() {
   f.classList.add("go-prev");
   Sound.cover(ms);
   await sleep(ms + 30);
+  if(epoch!==S.motionEpoch)return;
   book.classList.remove("turning", "closing-front");
   f.remove();
   await showClosedFront();
@@ -2515,8 +2739,9 @@ async function closeFront() {
 async function closeBack() {
   if (S.state !== "open" || S.animating || !S.src) return;
   S.animating = true;
-  const ms = S.reduce ? 1 : 820, book = $("#book"), last = LAST();
+  const epoch=S.motionEpoch, ms = turnDuration(820), book = $("#book"), last = LAST();
   const front = $("#slotR").firstElementChild || await surf(last, {});
+  if(epoch!==S.motionEpoch)return;
   const f = el("div", "flipper right");
   const fr = el("div", "face"); fr.append(front, el("div", "sheen"));
   const bk = el("div", "face back"); bk.append(backBoard(), coverHint("← Open back cover"), el("div", "sheen"));
@@ -2533,6 +2758,7 @@ async function closeBack() {
   f.classList.add("go-next");
   Sound.cover(ms);
   await sleep(ms + 30);
+  if(epoch!==S.motionEpoch)return;
   book.classList.remove("turning", "closing-back");
   f.remove();
   await showClosedBack();
@@ -2543,12 +2769,13 @@ async function openBack() {
   if (S.state !== "closed-back" || S.animating || !S.src) return;
   if (S.src.coverOnly) return turnCoverOnly(-1);
   S.animating = true;
-  const ms = S.reduce ? 1 : 820, book = $("#book"), f = $("#coverLeaf");
+  const epoch=S.motionEpoch, ms = turnDuration(820), book = $("#book"), f = $("#coverLeaf");
   const last = LAST(), anchor = spreadAnchor(last);
   const pl = await surf(last, {});
+  if(epoch!==S.motionEpoch){pl._ro?.disconnect();return;}
   if (f) f.querySelector(".face.back").replaceChildren(pl, el("div", "sheen"));
   S.page = anchor; S.side = 1;
-  setSlot($("#slotL"), await surf(anchor, {}));
+  const left=await surf(anchor,{});if(epoch!==S.motionEpoch){left._ro?.disconnect();return;}setSlot($("#slotL"),left);
   setSlot($("#slotR"), blankLeaf());
   book.classList.add("turning", "opening-back");
   setState("open", ms);
@@ -2562,6 +2789,7 @@ async function openBack() {
     f.classList.add("go-prev");
     Sound.cover(ms);
     await sleep(ms + 30);
+    if(epoch!==S.motionEpoch)return;
     setSlotEl($("#slotR"), pl);
     f.remove();
   } else { setSlotEl($("#slotR"), pl); }
@@ -2572,39 +2800,43 @@ async function openBack() {
 
 async function flipPage(dir) {
   S.animating = true;
-  const bl = Math.abs(S.queue);
-  /* Turning faster as the backlog grows is what makes a held arrow key feel like
-     thumbing through rather than queueing animations. */
-  const ms = S.reduce ? 1 : bl > 3 ? 150 : bl > 1 ? 280 : 620;
-  const fast = bl > 0, isNext = dir > 0, target = S.page + dir * 2;
-  if (isNext) {
-    const front = $("#slotR").firstElementChild || await surf(S.page + 1, { fast });
-    const back = await surf(target, { fast });
-    await runFlip({
-      side: "right", front, back, ms,
-      exposed: async () => setSlot($("#slotR"), await surf(target + 1, { fast })),
-      mid: () => { S.side = 0; applyDeck(ms); },
-      covered: () => { S.page = target; setSlotEl($("#slotL"), back); paintDepth(); },
+  const epoch=S.motionEpoch, source=S.src, start=S.page, isNext=dir>0;
+  const live=()=>epoch===S.motionEpoch && source===S.src;
+  const queued=Math.sign(S.queue)===dir?Math.abs(S.queue):0, cost=G.view===1?2:1;
+  const available=isNext?Math.floor((LAST()-start)/2):Math.floor((start-2)/2);
+  const count=S.scrollTurning?1:Math.max(1,Math.min(3,available,1+Math.floor(queued/cost)));
+  S.queue-=dir*(count-1)*cost;syncTurnQueue();
+  const target=start+dir*2*count, ms=turnDuration(S.scrollTurning?(S.scrollMs || 100):count>1?360:queued?400:680), sheets=[];
+  S.lastTurnBatch=count;
+  try {
+    for(let i=0;i<count;i++) {
+      const anchor=start+dir*2*i;
+      const front=i===0 ? ($(isNext?'#slotR':'#slotL').firstElementChild || await surf(isNext?anchor+1:anchor,{})) : await surf(isNext?anchor+1:anchor,{fast:true});
+      const back=await surf(isNext?anchor+2:anchor-1,{fast:i<count-1});
+      sheets.push({front,back});if(!live())return;
+    }
+    // Landing pages always retain full text layers, including after fast PDF turns.
+    const under=await surf(isNext?target+1:target,{});if(!live()){under._ro?.disconnect();return;}
+    const back=sheets.at(-1).back;
+    await runFlip({side:isNext?'right':'left',sheets,ms,
+      exposed:()=>setSlot($(isNext?'#slotR':'#slotL'),under),
+      mid:()=>{S.side=isNext?0:1;applyDeck(ms);},
+      covered:()=>{S.page=target;setSlotEl($(isNext?'#slotL':'#slotR'),back);paintDepth();}
     });
-  } else {
-    const front = $("#slotL").firstElementChild || await surf(S.page, { fast });
-    const back = await surf(target + 1, { fast });
-    await runFlip({
-      side: "left", front, back, ms,
-      exposed: async () => setSlot($("#slotL"), await surf(target, { fast })),
-      mid: () => { S.side = 1; applyDeck(ms); },
-      covered: () => { S.page = target; setSlotEl($("#slotR"), back); paintDepth(); },
-    });
+  } catch(e) { if(live()){log('warn','Page turn interrupted: '+e.message);S.queue=0;await paint({});} }
+  finally {
+    for(const sheet of sheets)for(const leaf of [sheet.front,sheet.back])if(!leaf.isConnected)leaf._ro?.disconnect();
+    if(live()){S.animating=false;syncChrome();save();syncTurnQueue();drainQueue();}
   }
-  S.animating = false;
-  syncChrome(); save(); drainQueue();
 }
 async function pan(dir) {
+  const epoch=S.motionEpoch;
   S.animating = true;
-  const ms = S.reduce ? 1 : 430;
+  const ms = turnDuration(Math.abs(S.queue)>0?170:360);
   S.side = dir > 0 ? 1 : 0;
   applyDeck(ms); syncChrome(); save();
   await sleep(ms);
+  if(epoch!==S.motionEpoch)return;
   S.animating = false; drainQueue();
 }
 
@@ -2634,19 +2866,25 @@ async function turn(dir) {
   if (a === "pan") return pan(dir);
   return flipPage(dir);
 }
-function queueTurn(dir) {
+function queueTurn(dir, count = 1, scrolling = false) {
   if (!S.src) return;
+  S.scrollTurning=scrolling;
+  if(scrolling)S.queue=0;
+  dir=Math.sign(dir);count=clamp(Math.round(count)||1,1,8);if(!dir)return;
   if (Speech.active() && !Speech.isInternal()) Speech.stop();
-  if (S.animating) { S.queue = clamp(S.queue + dir, -8, 8); return; }
-  turn(dir);
+  if(S.orient==='linear'){showLinear(clamp(currentPage()+dir*count,1,LAST()),true);return;}
+  if(S.queue && Math.sign(S.queue)!==dir)S.queue=0;
+  S.queue=clamp(S.queue+dir*count,-32,32);syncTurnQueue();
+  if(!S.animating)drainQueue();
 }
-function drainQueue() { if (!S.queue) return; const d = S.queue > 0 ? 1 : -1; S.queue -= d; turn(d); }
+function drainQueue() { if (!S.queue || S.animating) return; const d = S.queue > 0 ? 1 : -1; S.queue -= d; syncTurnQueue(); turn(d); }
 const jump = (n) => { if (S.src) goto(currentPage() + n); };
 
 async function goto(p) {
   if (!S.src) return;
   if (Speech.active() && !Speech.isInternal()) Speech.stop();
-  S.queue = 0;
+  if(S.animating){S.motionEpoch++;DragTurn.reset();clearFlippers();$('#book').classList.remove('turning','dragging','opening-front','opening-back','closing-front','closing-back','cover-turning','past-half','from-front','from-back');S.animating=false;}
+  stopQueuedTurns();
   const last = LAST();
   p = clamp(Math.round(p) || 1, 1, last);
   if (S.orient === "linear" || S.state === "linear") return showLinear(p);
@@ -2706,6 +2944,9 @@ function goBack() {
 function syncBack() { $("#backBtn").hidden = !S.history.length; }
 
 function syncChrome() {
+  syncTurnQueue();
+  $("#app").dataset.home = S.src ? "0" : "1";
+  for (const id of ["prev", "next", "folio", "markBtn", "listenBtn", "notesBtn"]) $("#" + id).disabled = !S.src;
   const folio = $("#folio");
   $("#zoomCtl").hidden = !S.src;
   if (!S.src) { folio.textContent = "No book open"; $("#pct").textContent = ""; paintDepth(); return; }
@@ -2986,6 +3227,7 @@ function syncFullscreenButton() {
 let reflowT;
 function scheduleReflow(delay = 200) { clearTimeout(reflowT); reflowT = setTimeout(doReflow, delay); }
 async function doReflow() {
+  if(S.animating){scheduleReflow(100);return;}
   if (!S.src) { relayout(); return; }
   const st = S.state, before = currentPage();
   const a = S.src.anchor ? S.src.anchor(before) : null;
@@ -3019,6 +3261,8 @@ function sniff(buf) {
   return null;
 }
 function teardown() {
+  S.motionEpoch++; stopQueuedTurns();
+  $('#book').classList.remove('turning','dragging','opening-front','opening-back','closing-front','closing-back','cover-turning','past-half','from-front','from-back');
   Speech.stop(true); Sprint.exit(true); Autoplay.stop(true); Zoom.reset(true);
   Stats.end();
   if (S.src?.destroy) { try { S.src.destroy(); } catch {} }
@@ -3067,6 +3311,7 @@ async function openFile(file, opts = {}) {
   $("#findIn").value = ""; $("#findN").textContent = "";
   $("#findPrev").disabled = true; $("#findNext").disabled = true;
   $("#welcome").hidden = true;
+  $("#app").dataset.home = "0";
   closePanels();
   relayout();
   $("#book").classList.add("arrive");
@@ -3076,7 +3321,7 @@ async function openFile(file, opts = {}) {
   buildToc();
   const ms = Math.round(performance.now() - t0);
   status(`${S.src.title || name} · ready`, "ok");
-  toast("ok", `${S.src.title || name} opened in ${ms}ms.${S.orient === "linear" ? "" : " Click the cover to open it."}`, 4200);
+  toast("ok", `${S.src.title || name}${S.orient === "linear" ? " is ready to read." : " · Open the cover, or press Enter to begin."}`, 3000);
   if (S.src.paginate) {
     const bar = $("#work").firstElementChild;
     S.src.paginate((d, t) => { bar.style.width = Math.round((d / t) * 100) + "%"; if (d % 4 === 0 || d === t) syncChrome(); })
@@ -3092,6 +3337,7 @@ async function openFile(file, opts = {}) {
 /* Back to the shelf. The position is already saved on every turn; closing
    the book just releases it and brings the welcome screen back. */
 function goHome() {
+  if ($("#app").dataset.focus === "1") setFocus(false);
   closePanels(); closeOverlays(); Pop.close();
   if (S.src) { save(); teardown(); }
   $("#welcome").hidden = false;
@@ -3147,6 +3393,7 @@ function searchStep(dir) {
   else gotoHit(S.hits.at + dir);
 }
 async function gotoHit(i) {
+  const seq=searchSeq, source=S.src;
   const L = S.hits.list;
   if (!L.length) return;
   S.hits.at = ((i % L.length) + L.length) % L.length;
@@ -3157,6 +3404,7 @@ async function gotoHit(i) {
   S.hits.cur = S.src.hitKey ? S.src.hitKey(h) : null;
   let p = null;
   try { p = await fence(S.src.pageOfHit(h), 25000, null); } catch {}
+  if(seq!==searchSeq || S.src!==source)return;
   if (p == null) { toast("warn", "That match could not be placed on a page."); return; }
   await jumpTo(p, { remember: S.hits.at === 0 });
   Hits.active();
@@ -3523,7 +3771,7 @@ const Tilt = (() => {
     init() {
       const st = $("#stage");
       st.addEventListener("pointermove", (e) => {
-        if (!S.room.tilt || S.reduce || S.zoom !== 1 || !S.src || S.state === "linear" || e.pointerType === "touch") return;
+        if (!S.room.tilt || S.reduce || S.zoom !== 1 || !S.src || S.state === "linear" || e.pointerType === "touch" || e.buttons || String(window.getSelection?.() || '').length>0) return;
         const r = st.getBoundingClientRect();
         const fx = (e.clientX - r.left) / r.width - 0.5, fy = (e.clientY - r.top) / r.height - 0.5;
         ty = fx * 3.2; tx = -fy * 2.4;
@@ -3643,6 +3891,14 @@ const Zoom = (() => {
     miniVp.style.left = (x0 * 100).toFixed(2) + "%"; miniVp.style.top = (y0 * 100).toFixed(2) + "%";
     miniVp.style.width = ((x1 - x0) * 100).toFixed(2) + "%"; miniVp.style.height = ((y1 - y0) * 100).toFixed(2) + "%";
   }
+  /* Said a couple of times, then trusted to be known. */
+  function hintPan() {
+    const k = "flipbook:hint:pan", n = Store.get(k, 0) || 0;
+    if (n >= 2) return;
+    Store.set(k, n + 1);
+    const coarse = matchMedia("(pointer:coarse)").matches;
+    setTimeout(() => { if (S.zoom !== 1) toast("add", coarse ? "Drag with one finger to move around the page. Pinch to zoom." : "Right-drag to move around the page. Left-drag still selects text.", 3600); }, 350);
+  }
   /* Put the book point under the minimap pointer at the centre of the stage. */
   function centreAt(e) {
     const m = mini.getBoundingClientRect(), b = book.getBoundingClientRect(), r = st.getBoundingClientRect();
@@ -3653,19 +3909,42 @@ const Zoom = (() => {
   }
   const api = {
     init() {
+      /* Moving the magnified page. The left button keeps its meaning over text
+         (selecting), so it only pans from the margins and the room around the
+         book. The right or middle button, a finger, or Alt+left grabs the page
+         from anywhere, text included. */
+      const NO_PAN = "#zoomBadge,#minimap,.panel,#pop,#seltools,#listen,input,textarea,select";
       st.addEventListener("pointerdown", (e) => {
-        if (S.zoom === 1 || e.button !== 0 || e.target.closest("#zoomBadge,#minimap,.panel")) return;
-        drag = { x: e.clientX, y: e.clientY, zx: S.zx, zy: S.zy, moved: false, id: e.pointerId };
+        if (S.zoom === 1 || e.target.closest(NO_PAN)) return;
+        /* A second finger is not a second grab; a stale grab from the same
+           pointer (released off-stage before it moved) is replaced. */
+        if (drag) { if (drag.id !== e.pointerId) return; end(e); }
+        const grab = e.button === 2 || e.button === 1 || e.pointerType === "touch" || e.altKey;
+        if (e.button === 0 ? !grab && isReadingContent(e) : !grab) return;
+        /* Middle and right presses would otherwise start autoscroll or a selection. */
+        if (e.button !== 0) e.preventDefault();
+        drag = { x: e.clientX, y: e.clientY, zx: S.zx, zy: S.zy, moved: false, id: e.pointerId, button: e.button, type: e.pointerType };
       });
       st.addEventListener("pointermove", (e) => {
         if (!drag || e.pointerId !== drag.id) return;
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-        if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+        if (!drag.moved && Math.hypot(dx, dy) < (drag.type === "touch" ? 10 : 6)) return;
         if (!drag.moved) { drag.moved = true; st.classList.add("panning"); t.classList.add("none"); try { st.setPointerCapture(e.pointerId); } catch {} window.getSelection?.().removeAllRanges(); }
         S.zx = drag.zx + dx; S.zy = drag.zy + dy; limitPan(); paint(true);
       });
-      const end = (e) => { if (!drag) return; if (drag.moved) panT = performance.now(); st.classList.remove("panning"); t.classList.remove("none"); try { st.releasePointerCapture(e.pointerId); } catch {} drag = null; updateMini(); };
+      const end = (e) => { if (!drag || (e && e.pointerId !== drag.id)) return; if (drag.moved) panT = performance.now(); st.classList.remove("panning"); t.classList.remove("none"); try { st.releasePointerCapture(e.pointerId); } catch {} drag = null; updateMini(); };
       st.addEventListener("pointerup", end); st.addEventListener("pointercancel", end);
+      /* Released before it moved, off the stage: nothing captured it, so the
+         release arrives at the window instead. */
+      window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
+      /* The browser's menu stays out of a right-button pan. Windows raises it on
+         release, so a pan that moved suppresses it; macOS and Linux raise it on
+         press, where a pending right-button grab suppresses it. A plain right
+         click that never moved (on release platforms) still gets its menu. */
+      st.addEventListener("contextmenu", (e) => {
+        if (S.zoom === 1 || e.target.closest(NO_PAN)) return;
+        if ((drag && drag.button === 2) || api.justPanned()) e.preventDefault();
+      });
       /* Minimap: click to jump, drag to scrub. Transitions are off while
          dragging so the window follows the hand without lag. */
       mini.addEventListener("pointerdown", (e) => {
@@ -3680,6 +3959,17 @@ const Zoom = (() => {
       mini.addEventListener("pointerup", miniEnd); mini.addEventListener("pointercancel", miniEnd);
       mini.addEventListener("click", (e) => e.stopPropagation());
       mini.addEventListener("dblclick", (e) => e.stopPropagation());
+      mini.tabIndex=0;mini.setAttribute('role','region');
+      mini.setAttribute('aria-label','Book minimap. Arrow keys pan; Shift plus arrow moves farther; Home recentres.');
+      mini.addEventListener('keydown',e=>{
+        if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home'].includes(e.key))return;
+        e.preventDefault();e.stopPropagation();
+        const step=e.shiftKey?180:55;
+        if(e.key==='Home'){startCorner();paint(true);return;}
+        S.zx+=e.key==='ArrowLeft'?step:e.key==='ArrowRight'?-step:0;
+        S.zy+=e.key==='ArrowUp'?step:e.key==='ArrowDown'?-step:0;
+        limitPan();paint(true);
+      });
       t.addEventListener("transitionend", updateMini);
       $("#miniToggle").onclick = () => api.setMini(!miniOn());
       $("#miniOnBtn").onclick = () => api.setMini(!miniOn());
@@ -3691,7 +3981,12 @@ const Zoom = (() => {
       window.addEventListener("resize", () => { if (S.zoom !== 1) { limitPan(); paint(true); } });
       /* Pinch on touch devices. */
       let pinch = null;
-      st.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && S.src && !e.target.closest("#minimap")) pinch = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z: S.zoom }; }, { passive: true });
+      st.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 2 || !S.src || e.target.closest("#minimap")) return;
+        /* A second finger turns a one-finger pan into a pinch. */
+        if (drag) { st.classList.remove("panning"); t.classList.remove("none"); try { st.releasePointerCapture(drag.id); } catch {} drag = null; }
+        pinch = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z: S.zoom };
+      }, { passive: true });
       st.addEventListener("touchmove", (e) => {
         if (!pinch || e.touches.length !== 2) return;
         e.preventDefault();
@@ -3717,10 +4012,12 @@ const Zoom = (() => {
         const k = nz / S.zoom;
         S.zx = px - k * (px - S.zx); S.zy = py - k * (py - S.zy);
       }
+      const was = S.zoom;
       S.zoom = nz;
       if (nz === 1) { S.zx = S.zy = 0; }
       limitPan(); paint(fast);
       pageAt = currentPage();
+      if (was === 1 && nz !== 1) hintPan();
     },
     by(k, cx, cy) { api.set(S.zoom * k, cx, cy, true); },
     cycle() { const steps = [1, 1.6, 2.4, 3.4]; const i = steps.findIndex((v) => v > S.zoom + 0.01); if (i < 0) api.reset(); else api.set(steps[i], null, null, true); },
@@ -3759,6 +4056,7 @@ const DragTurn = (() => {
      release that lands during the build is remembered and honoured after it. */
   async function start(p0, dir) {
     const my = p0;
+    const epoch=S.motionEpoch;
     S.animating = true; S.queue = 0;
     try { window.getSelection()?.removeAllRanges(); } catch {}
     const isNext = dir > 0, target = S.page + dir * 2;
@@ -3766,27 +4064,19 @@ const DragTurn = (() => {
     const front = slot.firstElementChild || await surf(isNext ? S.page + 1 : S.page, {});
     const back = await surf(isNext ? target : target + 1, {});
     const under = await surf(isNext ? target + 1 : target, {});
-    if (!S.src || pending !== my) { S.animating = false; pending = null; return; }
-    const f = el("div", "flipper " + (isNext ? "right" : "left"));
-    f.style.transition = "none";
-    const fr = el("div", "face"); fr.append(front, el("div", "sheen"));
-    const bk = el("div", "face back"); bk.append(back, el("div", "sheen"));
-    f.append(fr, bk);
+    if (!S.src || pending !== my || epoch!==S.motionEpoch) { for(const leaf of [back,under])leaf._ro?.disconnect();return; }
+    const curl=PaperCurl.create(front,back,isNext?'right':'left'), f=curl.f;
     book.append(f);
     book.classList.add("turning", "dragging");
     setSlot(slot, under);
-    d = { f, isNext, target, back, front, slot, r: my.r, id: my.id, p: 0, samples: my.samples.slice() };
+    d = { f, curl, epoch, isNext, target, back, front, slot, r: my.r, id: my.id, p: 0, samples: my.samples.slice(), cancelled:my.cancelled };
     const released = my.released; pending = null;
     paintP(progressOf(my.lastX, my.r, isNext));
     if (released) end({ pointerId: my.id });
   }
   function paintP(p) {
     d.p = p;
-    const a = p * 180;
-    d.f.style.transform = `rotateY(${d.isNext ? -a : a}deg)`;
-    /* Light follows the hand: the sheen's opacity peaks as the leaf stands up. */
-    const lit = Math.sin(p * Math.PI) * 0.75;
-    d.f.querySelectorAll(".sheen").forEach((s, i) => { s.style.opacity = String(lit); s.style.transform = `translateX(${(i ? 1 : -1) * (0.5 - p) * 80}%)`; });
+    d.curl.pose(p);
   }
   function move(e) {
     if (pending && e.pointerId === pending.id) {
@@ -3802,7 +4092,7 @@ const DragTurn = (() => {
   }
   async function end(e) {
     if (pending && e && e.pointerId === pending.id) {
-      if (pending.started) { pending.released = true; return; }
+      if (pending.started) { pending.released = true; pending.cancelled=e.type==='pointercancel'; return; }
       try { book.releasePointerCapture(pending.id); } catch {}
       pending = null; return;
     }
@@ -3811,15 +4101,12 @@ const DragTurn = (() => {
     try { book.releasePointerCapture(cur.id); } catch {}
     const [t0, p0] = cur.samples[0], [t1, p1] = cur.samples[cur.samples.length - 1];
     const v = t1 > t0 ? (p1 - p0) / ((t1 - t0) / 1000) : 0;
-    const commit = cur.p > 0.5 || (v > 1.6 && cur.p > 0.12);
+    const commit = !cur.cancelled && e?.type!=='pointercancel' && (cur.p > 0.5 || (v > 1.6 && cur.p > 0.12));
     const remaining = commit ? 1 - cur.p : cur.p;
-    const ms = S.reduce ? 1 : clamp(Math.round(160 + remaining * 420), 120, 600);
-    cur.f.style.transition = `transform ${ms}ms var(--ease)`;
-    cur.f.querySelectorAll(".sheen").forEach((s) => { s.style.transition = `opacity ${ms}ms linear`; s.style.opacity = "0"; });
-    await raf();
-    cur.f.style.transform = commit ? `rotateY(${cur.isNext ? -180 : 180}deg)` : "rotateY(0deg)";
+    const ms = turnDuration(clamp(Math.round(160 + remaining * 420), 120, 600));
     if (commit) Sound.turn(ms);
-    await sleep(ms + 20);
+    await PaperCurl.animate(cur.curl,cur.p,commit?1:0,ms,()=>cur.epoch===S.motionEpoch);
+    if(cur.epoch!==S.motionEpoch){cur.f.remove();for(const l of [cur.front,cur.back])if(!l.isConnected)l._ro?.disconnect();return;}
     if (commit) {
       S.page = cur.target;
       setSlotEl(cur.isNext ? $("#slotL") : $("#slotR"), cur.back);
@@ -3828,11 +4115,12 @@ const DragTurn = (() => {
       setSlotEl(cur.slot, cur.front);
     }
     cur.f.remove();
+    for(const l of [cur.front,cur.back])if(!l.isConnected)l._ro?.disconnect();
     book.classList.remove("turning", "dragging");
     S.animating = false;
     lastEnd = performance.now();
     touchLockUntil = lastEnd + 450;
-    syncChrome(); save();
+    syncChrome(); save(); drainQueue();
   }
   return {
     init() {
@@ -3840,7 +4128,9 @@ const DragTurn = (() => {
         if (!S.src || S.animating || S.state !== "open" || G.view !== 2 || e.button !== 0 || S.zoom !== 1) return;
         if (String(window.getSelection?.() || "").length > 1) return;
         const r = book.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
-        const dir = x > 0.92 ? 1 : x < 0.08 ? -1 : 0;
+        if (isReadingContent(e)) return;
+        const edge=Math.min(.04,Math.max(.012,G.mx*.7/(2*G.pageW)));
+        const dir = x > 1-edge ? 1 : x < edge ? -1 : 0;
         if (!dir || actionFor(dir) !== "flip") return;
         if (Speech.active()) Speech.stop();
         /* Owning the pointer here stops a fore-edge drag from doubling as a
@@ -4009,8 +4299,10 @@ const Library = (() => {
     cov.append(t); return cov;
   }
   function card(b, onOpen, onRemove) {
-    const card = el("div", "tome"); card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", `Open ${b.title}`);
-    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(b); } else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); onRemove(b); } });
+    const card = el("div", "tome");
+    const open = el("button", "open-tome"); open.type = "button";
+    open.setAttribute("aria-label", `Open ${b.title}${b.pct > 0 ? ', ' + Math.round(b.pct * 100) + '% read' : ''}`);
+    open.onclick = () => onOpen(b);
     let cov;
     if (b.cover) { cov = el("div", "cov"); const img = el("img"); img.src = b.cover; img.alt = ""; img.loading = "lazy"; cov.append(img); }
     else cov = typesetCover(b);
@@ -4022,8 +4314,11 @@ const Library = (() => {
     meta.append(el("span", null, (b.creator ? b.creator + " · " : "") + pctTxt), el("span", null, (b.kind || "").toUpperCase() + " · " + ago(b.opened || b.added)));
     const rm = el("button", "rm", "×"); rm.type = "button"; rm.title = "Remove from shelf"; rm.setAttribute("aria-label", `Remove ${b.title} from the shelf`);
     rm.onclick = (e) => { e.stopPropagation(); onRemove(b); };
-    card.append(rm, cov, meta);
-    card.onclick = () => onOpen(b);
+    const model=el('span','shelf-book');model.setAttribute('aria-hidden','true');
+    model.style.setProperty('--ca',cov.style.getPropertyValue('--ca') || `hsl(${hueOf(b.title || b.name)} 24% 30%)`);
+    model.style.setProperty('--cb',cov.style.getPropertyValue('--cb') || `hsl(${hueOf(b.title || b.name)} 24% 20%)`);
+    model.append(el('span','shelf-back'),el('span','shelf-pages'),el('span','shelf-spine',b.title || b.name),cov);
+    open.append(model, meta); card.append(open, rm);
     return card;
   }
   async function openFromShelf(b) {
@@ -4051,9 +4346,11 @@ const Library = (() => {
     const shelf = $("#shelfRow"), wel = $("#welcome");
     shelf.replaceChildren();
     wel.dataset.shelf = books.length ? "1" : "0";
-    for (const b of books) shelf.append(card(b, openFromShelf, remove));
+    const filtered = ReadingRoom.filter(books);
+    for (const b of filtered) shelf.append(card(b, openFromShelf, remove));
+    ReadingRoom.dashboard(books, filtered.length);
     const done = books.filter((b) => b.finished).length;
-    $("#shelfMeta").textContent = books.length ? `${books.length} book${books.length > 1 ? "s" : ""}${done ? ` · ${done} finished` : ""}` : "";
+    $("#shelfMeta").textContent = books.length ? `${filtered.length} of ${books.length} book${books.length > 1 ? "s" : ""}${done ? ` · ${done} finished` : ""}` : "0 books · endless possibilities";
     if ($("#library").dataset.open === "1") renderPanel();
   }
   async function renderPanel() {
@@ -4180,8 +4477,8 @@ const Stats = (() => {
     const C = 2 * Math.PI * 40;
     hero.innerHTML = `<svg class="ring" viewBox="0 0 96 96"><circle class="bg" cx="48" cy="48" r="40"/><circle class="fg" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - f)).toFixed(1)}"/><text x="48" y="46" text-anchor="middle">${Math.round(f * 100)}%</text><text class="sub" x="48" y="60" text-anchor="middle">OF GOAL</text></svg>`;
     const big = el("div", "big"); big.append(document.createTextNode(fmt(todayMs) + " today"), el("small", null, `${streak()} day streak · goal ${data.goal} min`));
-    const goal = el("div", "stat-goal"); const inp = el("input"); inp.type = "number"; inp.min = "5"; inp.max = "600"; inp.value = data.goal;
-    inp.onchange = () => { data.goal = clamp(parseInt(inp.value, 10) || 30, 5, 600); save(); render(); };
+    const goal = el("div", "stat-goal"); const inp = el("input"); inp.type = "number"; inp.min = "5"; inp.max = "600"; inp.value = data.goal; inp.setAttribute("aria-label", "Daily reading goal in minutes");
+    inp.onchange = () => { data.goal = clamp(parseInt(inp.value, 10) || 30, 5, 600); save(); render(); Library.render(); };
     goal.append(el("span", null, "Daily goal"), inp, el("span", null, "minutes"));
     big.append(goal); hero.append(big); body.append(hero);
     /* Fourteen days. */
@@ -4365,14 +4662,29 @@ const Ann = (() => {
           let rs = []; try { rs = s.getComposedRanges({ shadowRoots: [leaf._root] }); } catch { try { rs = s.getComposedRanges(leaf._root); } catch {} }
           if (rs && rs[0]) { const sr = rs[0]; r = document.createRange(); r.setStart(sr.startContainer, sr.startOffset); r.setEnd(sr.endContainer, sr.endOffset); }
         } else if (leaf._root.getSelection) { const ss = leaf._root.getSelection(); if (ss && ss.rangeCount && !ss.isCollapsed) r = ss.getRangeAt(0); }
+        /* Older engines without either API hand out the shadow nodes directly. */
+        else r = s.getRangeAt(0);
       } else r = s.getRangeAt(0);
     } catch { r = null; }
     if (!r || r.collapsed) return null;
     if (!lr.root.contains(r.startContainer) || !lr.root.contains(r.endContainer)) return null;
     return { r, lr };
   }
+  /* Seen from the document, a selection made inside an EPUB page's shadow tree
+     is rescoped to the host and reads as collapsed, so emptiness is judged by
+     the selected text and, failing that, by the composed ranges themselves. */
+  function selectionEmpty(s) {
+    if (!s || !s.rangeCount) return true;
+    if (!s.isCollapsed || String(s).trim()) return false;
+    const roots = mountedLeaves().filter((l) => l._kind === "epub" && l._root).map((l) => l._root);
+    if (!roots.length) return true;
+    try {
+      if (s.getComposedRanges) { let rs = []; try { rs = s.getComposedRanges({ shadowRoots: roots }); } catch { rs = s.getComposedRanges(...roots); } return !rs.some((r) => !r.collapsed); }
+      return !roots.some((r) => { const ss = r.getSelection?.(); return ss && ss.rangeCount && !ss.isCollapsed; });
+    } catch { return true; }
+  }
   function currentSelection() {
-    const s = window.getSelection(); if (!s || s.isCollapsed || !s.rangeCount) return null;
+    const s = window.getSelection(); if (selectionEmpty(s)) return null;
     for (const leaf of mountedLeaves()) {
       const hit = rangeInLeaf(leaf, s); if (!hit) continue;
       const { r, lr } = hit;
@@ -4392,9 +4704,25 @@ const Ann = (() => {
     tools.querySelector('[data-act="remove"]').hidden = mode !== "edit";
     tools.querySelector('[data-act="find"]').hidden = mode === "edit";
     tools.querySelectorAll(".hl-dot").forEach((d) => d.setAttribute("aria-pressed", String(mode === "edit" && editing && d.dataset.hl === editing.color)));
+    /* Phones get a bar docked along the bottom: it never covers the passage or
+       the system's own selection handles, and it stays under the thumb. Wider
+       screens get the floating bubble; on touch screens it goes below the
+       passage when it fits, because the system menu already sits above it. */
+    tools.classList.remove("docked");
     const w = tools.offsetWidth, h = tools.offsetHeight;
-    let x = clamp(rect.left + rect.width / 2, w / 2 + 8, innerWidth - w / 2 - 8);
-    let above = rect.top - h - 14 > 60;
+    const coarse = matchMedia("(pointer:coarse)").matches;
+    const fitsAbove = rect.top - h - 14 > 60, fitsBelow = rect.bottom + h + 14 < innerHeight - 8;
+    const docked = matchMedia("(max-width:700px)").matches || (!fitsAbove && !fitsBelow);
+    tools.classList.toggle("docked", docked);
+    if (docked) {
+      tools.classList.remove("below"); tools.style.left = tools.style.top = "";
+      /* Clear of the page controls when they are showing. */
+      const bb = $("#bottombar"), br = bb && !bb.hidden && $("#app").dataset.focus !== "1" ? bb.getBoundingClientRect() : null;
+      tools.style.setProperty("--dock", br && br.height > 0 && br.top < innerHeight ? Math.max(0, innerHeight - br.top) + "px" : "0px");
+      return;
+    }
+    const above = coarse ? !fitsBelow && fitsAbove : fitsAbove;
+    const x = clamp(rect.left + rect.width / 2, w / 2 + 8, innerWidth - w / 2 - 8);
     tools.classList.toggle("below", !above);
     tools.style.left = x + "px";
     tools.style.top = (above ? rect.top : rect.bottom) + "px";
@@ -4404,7 +4732,7 @@ const Ann = (() => {
     clearTimeout(selT);
     selT = setTimeout(() => {
       const s = window.getSelection();
-      if (!s || s.isCollapsed) { if (!editing) hideTools(); sel = null; return; }
+      if (selectionEmpty(s)) { if (!editing) hideTools(); sel = null; return; }
       const info = currentSelection();
       if (!info) { if (!editing) hideTools(); sel = null; return; }
       sel = info; editing = null; lastSelAt = performance.now();
@@ -5139,8 +5467,8 @@ const Palette = (() => {
 const Keys = (() => {
   const groups = {
     Turning: [["← →", "Turn the page"], ["Shift + ← →", "Jump ten pages"], ["Space / PgDn", "Next page"], ["Home / End", "Front cover / last page"], ["Enter", "Open the cover, or resume"], ["Alt + ←", "Back to where you jumped from"], ["R", "Focus the riffle track"], ["Wheel / swipe", "Turn"]],
-    Reading: [["Shift + S", "Read aloud play / pause"], ["S", "Sprint mode"], ["Shift + A", "Auto-turn"], ["L", "Reading ruler"], ["[ ]", "Previous / next highlight"], ["Select text", "Highlight, note, define, listen"], ["+ / −", "Type size (EPUB)"], ["Ctrl + wheel", "Zoom"], ["Z", "Step through zoom levels"], ["Double-click beside the book", "Zoom in / out"], ["Drag the minimap", "Move around a magnified page"]],
-    Hands: [["Drag a fore-edge", "Turn the page by hand"], ["Drag the track", "Riffle through the book"], ["Pinch", "Zoom on touch screens"], ["Click a picture", "Open it large"], ["Click a footnote", "Read it in place"]],
+    Reading: [["Shift + S", "Read aloud play / pause"], ["S", "Sprint mode"], ["Shift + A", "Auto-turn"], ["L", "Reading ruler"], ["[ ]", "Previous / next highlight"], ["Select text", "Highlight, note, define, listen"], ["+ / −", "Type size (EPUB)"], ["Ctrl + wheel", "Zoom"], ["Z", "Step through zoom levels"], ["Double-click beside the book", "Zoom in / out"], ["Right-drag / Alt + drag", "Move around a magnified page"], ["Drag the minimap", "Move around a magnified page"]],
+    Hands: [["Drag a fore-edge", "Turn the page by hand"], ["Drag the track", "Riffle through the book"], ["Pinch", "Zoom on touch screens"], ["One-finger drag", "Move around a magnified page"], ["Click a picture", "Open it large"], ["Click a footnote", "Read it in place"]],
     Panels: [["C", "Contents"], ["N", "Highlights & notes"], ["/", "Search"], ["G", "Overview grid"], ["Shift + L", "Your shelf"], ["Shift + T", "Reading stats"], ["T", "Type & theme"], ["Ctrl + K", "Command palette"], ["?", "This sheet"]],
     Room: [["D", "Next theme"], ["P", "Cycle layout"], ["F", "Fullscreen"], ["Shift + F", "Focus mode"], ["M", "Page sounds"], ["B", "Bookmark"], ["O", "Open a book"], ["H", "Home: close the book, show the shelf"], ["Esc", "Close / stop / leave"]],
   };
@@ -5271,6 +5599,13 @@ $("#findIn").oninput = () => {
     $("#findPrev").disabled = true;
     /* The down arrow doubles as the visible 'start search' control. */
     $("#findNext").disabled = !S.src || q.length < 2;
+    Hits.render();
+    status(S.src ? `${S.src.title || 'Book'} · ready` : 'Your books stay on this device');
+    clearTimeout(toastT);$('#toast').classList.remove('show');
+    for(const leaf of mountedLeaves()){const lr=leafRoot(leaf);if(lr)unwrapMarks(lr.root,'mark.hit');}
+    // Include minimap and cached continuous pages, without repainting selection.
+    document.querySelectorAll('.leaf-shadow').forEach(host=>{if(host.shadowRoot)unwrapMarks(host.shadowRoot,'mark.hit');});
+    document.querySelectorAll('.tlayer').forEach(layer=>unwrapMarks(layer,'mark.hit'));
   }
 };
 $("#findIn").onkeydown = (e) => {
@@ -5405,28 +5740,32 @@ $("#linearReader").addEventListener("scroll", () => {
 }
 
 /* Click the book: covers open, page edges turn, the middle is for reading */
+function isReadingContent(e) {
+  return e.composedPath().some(n=>n.nodeType===1 && n.matches?.('.flow,.tlayer,a[href],mark.hl,.pdf-link,button,input,select,textarea'));
+}
 let touchLockUntil = 0;
 $("#book").addEventListener("click", (e) => {
-  if (!S.src || S.animating || performance.now() < touchLockUntil) return;
+  if (!S.src || performance.now() < touchLockUntil || DragTurn.active()) return;
   if (S.zoom !== 1 || Zoom.justPanned()) return;
   if (String(window.getSelection?.() || "").length > 1) return;
   /* Links, highlights and pictures inside the page have their own handlers. */
   if (e.composedPath().some((n) => n.nodeType === 1 && (n.matches?.("a[href],mark.hl,.pdf-link") || (n.tagName === "IMG" && n.closest?.(".flow"))))) return;
   if (Ann.recentlySelected()) return;
-  if (S.state === "closed-front") { openFront(); return; }
-  if (S.state === "closed-back") { openBack(); return; }
+  if (S.state === "closed-front") { queueTurn(1); return; }
+  if (S.state === "closed-back") { queueTurn(-1); return; }
+  if (isReadingContent(e)) return;
   const r = $("#book").getBoundingClientRect();
   const x = (e.clientX - r.left) / Math.max(1, r.width);
   if (G.view === 1) { queueTurn(x > (S.side === 0 ? 0.25 : 0.75) ? 1 : -1); return; }
-  if (x > 0.8) queueTurn(1);
-  else if (x < 0.2) queueTurn(-1);
+  if (x > 0.94) queueTurn(1);
+  else if (x < 0.06) queueTurn(-1);
 });
 
 /* The stage is part of the reading surface too: the empty area beyond either
    fore-edge behaves like a generous previous/next target. Book clicks are left
    to the more precise handler above. */
 $("#stage").addEventListener("click", (e) => {
-  if (!S.src || S.animating || performance.now() < touchLockUntil || e.target.closest("#book, #welcome, #linearReader, #zoomBadge")) return;
+  if (!S.src || performance.now() < touchLockUntil || e.target.closest("#book,#welcome,#linearReader,#zoomBadge,#minimap,#turnQueue")) return;
   if (S.zoom !== 1 || Zoom.justPanned() || Ann.recentlySelected()) return;
   if (String(window.getSelection?.() || "").length > 1) return;
   const r = $("#book").getBoundingClientRect();
@@ -5437,6 +5776,7 @@ $("#stage").addEventListener("click", (e) => {
 /* Keyboard */
 const isField = (t) => !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
 window.addEventListener("keydown", (e) => {
+  if (e.defaultPrevented || document.querySelector('dialog[open]')) return;
   /* Overlays own the keyboard while they are up. */
   if (Palette.isOpen()) { Palette.key(e); return; }
   if (Sprint.isOpen()) { Sprint.key(e); return; }
@@ -5444,6 +5784,9 @@ window.addEventListener("keydown", (e) => {
   if (!$("#keys").hidden || !$("#grid").hidden) { if (e.key === "Escape") { e.preventDefault(); closeOverlays(); } return; }
   if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k") { e.preventDefault(); Palette.open(); return; }
   if (isField(e.target)) { if (e.key === "Escape") e.target.blur(); return; }
+  if ((e.key === ' ' || e.key === 'Enter') && e.target.closest?.('button,a,label[role="button"],input,select,textarea,[role="slider"]')) return;
+  if (e.target.closest?.('.panel') && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End',' '].includes(e.key)) return;
+  if (!ReadingRoom.shortcuts && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) return;
   if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); goBack(); return; }
   if ((e.ctrlKey || e.metaKey) && !e.altKey) {
     const k = e.key;
@@ -5463,6 +5806,7 @@ window.addEventListener("keydown", (e) => {
     case "Home": e.preventDefault(); goto(1); return;
     case "End": e.preventDefault(); if (S.src) goto(LAST()); return;
     case "Escape":
+      if(S.queue){stopQueuedTurns();return;}
       if (!$("#seltools").hidden) { Ann.hideTools(); return; }
       if (Speech.active()) { Speech.stop(); return; }
       if (S.zoom !== 1) { Zoom.reset(); return; }
@@ -5503,26 +5847,41 @@ window.addEventListener("keydown", (e) => {
 });
 
 /* Wheel and swipe */
-let wheelLock = false, wheelAcc = 0, wheelT = 0;
+let wheelAcc = 0, wheelT = 0, wheelLast = 0, wheelDirection = 0, wheelNotches = [];
 window.addEventListener("wheel", (e) => {
+  if (document.querySelector('dialog[open]')) return;
   if (e.ctrlKey || e.metaKey) {
     if (!S.src || e.target.closest?.(".panel,#pop,#palette,#grid,#keys,#sprint")) return;
     e.preventDefault();
     Zoom.by(e.deltaY < 0 ? 1.12 : 0.89, e.clientX, e.clientY);
     return;
   }
-  if (!S.src || S.orient === "linear" || e.target.closest?.(".panel,#track,#pop,#palette,#grid,#keys,#lightbox,#sprint,#library")) return;
+  if (!S.src || S.orient === "linear" || e.target.closest?.(".panel,#track,#pop,#palette,#grid,#keys,#lightbox,#sprint,#library,#minimap,#topbar,#bottombar")) return;
   if (S.zoom !== 1) { e.preventDefault(); Zoom.pan(-e.deltaX, -e.deltaY); return; }
-  wheelAcc += e.deltaY;
+  if(S.room.scrollTurns==='off' || String(window.getSelection?.() || '').length>1 || Ann.recentlySelected())return;
+  const delta=e.deltaY*(e.deltaMode===1?20:e.deltaMode===2?$('#stage').clientHeight:1);
+  if(Math.abs(delta)<1 || Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+  e.preventDefault();
+  const now=performance.now();
+  if(now-wheelLast>180 || wheelDirection!==Math.sign(delta)){wheelAcc=0;wheelNotches=[];}
+  wheelDirection=Math.sign(delta);
+  wheelLast=now;wheelAcc+=delta;
   clearTimeout(wheelT);
-  wheelT = setTimeout(() => (wheelAcc = 0), 150);
-  if (Math.abs(wheelAcc) < 30) return;
+  wheelT = setTimeout(() => {wheelAcc=0;if(S.scrollTurning){stopQueuedTurns();S.scrollTurning=false;}},85);
+  const threshold=S.room.scrollTurns==='gentle'?240:S.room.scrollTurns==='fast'?70:120;
+  if (Math.abs(wheelAcc) < threshold) return;
   const d = wheelAcc > 0 ? 1 : -1;
-  wheelAcc = 0;
-  if (wheelLock) return;
-  wheelLock = true;
-  setTimeout(() => (wheelLock = false), 90);
-  queueTurn(d);
+  const steps=Math.min(6,Math.floor(Math.abs(wheelAcc)/threshold));
+  wheelAcc-=d*steps*threshold;
+  // Require sustained rapid input; a single large mouse notch is still a normal turn.
+  wheelNotches=wheelNotches.filter(t=>now-t<220);
+  wheelNotches.push(now);
+  const fast=wheelNotches.length>=3;
+  const rate=wheelNotches.length>1?(wheelNotches.length-1)*1000/Math.max(1,now-wheelNotches[0]):0;
+  const pace=clamp((rate*Math.sqrt(steps)-15)/45,0,1);
+  const duration=400-270*pace*pace*(3-2*pace);
+  S.scrollMs=fast&&S.scrollTurning?S.scrollMs*.65+duration*.35:duration;
+  queueTurn(d,1,fast);
 }, { passive: false });
 {
   let x0 = null, y0 = null, moved = false;
@@ -5536,7 +5895,7 @@ window.addEventListener("wheel", (e) => {
     if (Math.abs(e.touches[0].clientX - x0) > 8 || Math.abs(e.touches[0].clientY - y0) > 8) moved = true;
   }, { passive: true });
   st.addEventListener("touchend", (e) => {
-    if (x0 == null || !moved || DragTurn.active() || S.zoom !== 1) { x0 = null; return; }
+    if (x0 == null || !moved || DragTurn.active() || S.zoom !== 1 || String(window.getSelection?.() || '').length>1 || Ann.recentlySelected()) { x0 = null; return; }
     const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
     if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.25) {
       touchLockUntil = performance.now() + 500;
@@ -5546,20 +5905,215 @@ window.addEventListener("wheel", (e) => {
   }, { passive: true });
 }
 
-/* Drop a book anywhere */
+/* Import drops belong to the library; dragging book images never opens files. */
 ["dragenter", "dragover"].forEach((ev) => window.addEventListener(ev, (e) => { e.preventDefault(); if (!S.src) $("#stage").classList.add("drop"); }));
 window.addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("#stage").classList.remove("drop"); });
 window.addEventListener("drop", (e) => {
   e.preventDefault();
   $("#stage").classList.remove("drop");
+  if(S.src || $('#welcome').hidden)return;
   const fs = e.dataTransfer?.files;
   if (fs?.length) openFiles(fs);
 });
 window.addEventListener("resize", () => scheduleReflow(220));
 matchMedia("(orientation: portrait)").addEventListener?.("change", () => scheduleReflow(260));
 
+/* Reading room enhancements. All state remains local; no build step. */
+const ReadingRoom = (() => {
+  const prefs = Object.assign({ reduce: false, contrast: false, large: false, shortcuts: true }, Store.get('flipbook.accessibility', {}));
+  const shelf = Object.assign({ filter: 'all', sort: 'recent', list: false }, Store.get('flipbook.shelfView', {}));
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let resume = null, query = '', sampleBusy = false, textIndex = 0, textSource = null, textSeq = 0;
+  let duration = 25, remaining = duration * 60, running = false, lastTick = performance.now();
+  const formatTime = n => { const seconds = Math.max(0, Math.ceil(n)); return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`; };
+  const localDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function applyPrefs() {
+    const root = document.documentElement;
+    S.reduce = motion.matches || prefs.reduce;
+    root.dataset.reduce = S.reduce ? '1' : '0'; root.dataset.contrast = prefs.contrast ? '1' : '0'; root.dataset.large = prefs.large ? '1' : '0';
+    Store.set('flipbook.accessibility', prefs);
+    for (const key of ['reduce','contrast','large','shortcuts']) { const input = $('#pref-' + key); if (input) input.checked = prefs[key]; }
+  }
+  function dialog(id, title, content) {
+    const d = el('dialog', 'edition-dialog'); d.id = id; d.setAttribute('aria-labelledby', id + '-title');
+    d.innerHTML = `<header><h2 id="${id}-title">${title}</h2><button class="ico" data-dismiss aria-label="Close ${title}">×</button></header>${content}`;
+    d.querySelector('[data-dismiss]').onclick = () => d.close();
+    d.addEventListener('click', e => { if (e.target === d) { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close(); } });
+    document.body.append(d); return d;
+  }
+  function openDialog(id) {
+    closePanels(); closeOverlays(); Palette.close(); Pop.close();
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    const d = $('#' + id); d.showModal();
+  }
+  function filter(books) {
+    const needle = query.trim().toLocaleLowerCase();
+    return books.filter(b => {
+      const finished = !!b.finished || b.pct >= .995;
+      return (!needle || `${b.title || b.name} ${b.creator || ''}`.toLocaleLowerCase().includes(needle)) &&
+        (shelf.filter === 'all' || (shelf.filter === 'finished' && finished) || (shelf.filter === 'reading' && b.pct > 0 && !finished) || (shelf.filter === 'unread' && !b.pct && !finished));
+    }).sort((a,b) => shelf.sort === 'title' ? (a.title || a.name).localeCompare(b.title || b.name) : shelf.sort === 'author' ? (a.creator || '').localeCompare(b.creator || '') : shelf.sort === 'progress' ? (b.pct || 0) - (a.pct || 0) : (b.opened || b.added) - (a.opened || a.added));
+  }
+  function dashboard(books, count) {
+    resume = books.find(b => b.pct > 0 && b.pct < .995 && !b.finished) || books.find(b => !b.finished && !(b.pct >= .995)) || null;
+    $('#resumeLabel').textContent = resume ? 'PICK UP WHERE YOU LEFT OFF' : 'YOUR NEXT CHAPTER';
+    $('#resumeTitle').textContent = resume ? resume.title || resume.name : 'Start a little reading ritual';
+    $('#resumeMeta').textContent = resume ? `${resume.creator || (resume.kind || '').toUpperCase()} · ${Math.round((resume.pct || 0) * 100)}% read` : 'Explore the sample. Make yourself at home.';
+    const data = Stats.data, today = data.days[localDay(new Date())] || 0;
+    $('#homeMinutes').textContent = Math.floor(today / 60000);
+    $('#homeGoalDial').style.setProperty('--goal', Math.min(100, today / (data.goal * 60000) * 100) + '%');
+    $('#homeGoalText').textContent = `${Math.floor(today / 60000)} of ${data.goal} minutes today`;
+    const days = Object.values(data.days).filter(ms => ms >= 60000).length;
+    $('#homeStreak').textContent = days ? `${days} reading day${days === 1 ? '' : 's'}. A habit worth keeping.` : 'Every page is a good beginning.';
+    $('#shelfEmpty').hidden = count > 0;
+    $('#shelfEmpty strong').textContent = books.length ? 'No books match this view.' : 'A shelf full of possibilities.';
+    $('#shelfEmpty p').textContent = books.length ? 'Try another filter or search by title or author.' : 'Add your first book, or explore our short sample. Your books and reading progress stay in this browser.';
+    $('#emptySample').hidden = books.length > 0;
+    $('#shelfRow').classList.toggle('list-view', !!shelf.list);
+    $('#shelfView').setAttribute('aria-pressed', String(!!shelf.list));
+    $('#shelfView').setAttribute('aria-label', shelf.list ? 'Use grid view' : 'Use list view');
+  }
+  async function sample() {
+    if (sampleBusy) return;
+    sampleBusy = true; $('#sampleBtn').disabled = true;
+    try {
+      const bytes = Uint8Array.from(atob(SAMPLE_BOOK), c => c.charCodeAt(0));
+      await openFile(new File([bytes], 'The Art of Paying Attention.epub', { type: 'application/epub+zip' }), { resume: true });
+    } catch (e) { toast('err', 'The sample could not open: ' + e.message); }
+    finally { sampleBusy = false; $('#sampleBtn').disabled = false; }
+  }
+  function timerPaint() {
+    $('#sessionTime').textContent = formatTime(remaining);
+    $('#sessionToggle').textContent = running ? 'Pause session' : remaining <= 0 ? 'Start again' : remaining < duration * 60 ? 'Resume session' : 'Start session';
+    $('#sessionState').textContent = running ? (!S.src ? 'Open a book to begin. The timer will wait.' : document.hidden ? 'Paused while this tab is hidden.' : 'A little time, just for your book.') : remaining <= 0 ? 'Session complete. Take a breath. You earned it.' : 'The timer counts while a book is open and this tab is visible.';
+    $('#sessionBadge').hidden = !running && remaining === duration * 60;
+    $('#sessionBadge').textContent = `${running ? '◷' : 'Ⅱ'} ${formatTime(remaining)}`;
+    $('#sessionBadge').setAttribute('aria-label', `Reading session: ${formatTime(remaining)} remaining. Open timer`);
+  }
+  function tick() {
+    const now = performance.now(), elapsed = Math.min(1.5, (now - lastTick) / 1000); lastTick = now;
+    if (running && S.src && !document.hidden) {
+      remaining = Math.max(0, remaining - elapsed);
+      if (remaining === 0) { running = false; toast('ok', 'Reading session complete. A good moment to stretch and rest your eyes.', 9000); $('#sessionState').textContent = 'Session complete.'; }
+    }
+    timerPaint();
+  }
+  async function renderText() {
+    const src = textSource, seq = ++textSeq;
+    if (!src || src !== S.src) return;
+    $('#accessibleText').textContent = 'Loading text…';
+    try {
+      const secs = src.kind === 'epub' ? src.sections().filter(s => !s.skip) : null;
+      const total = secs ? secs.length : src.realPages;
+      textIndex = clamp(textIndex, 0, Math.max(0, total - 1));
+      const target = secs ? secs[textIndex] : null;
+      const text = await (src.accessibleTextOf ? src.accessibleTextOf(target.i) : src.textOf(target ? target.i : textIndex + 1));
+      if (seq !== textSeq || src !== S.src) return;
+      $('#textLocation').textContent = `${secs ? 'Section' : 'Page'} ${textIndex + 1} of ${total}`;
+      $('#textHeading').textContent = target ? target.label : src.sectionLabel(textIndex + 1);
+      $('#accessibleText').textContent = text.trim() || 'There is no extractable text here. This may be an image-only page.';
+      $('#textPrevious').disabled = textIndex === 0; $('#textNext').disabled = textIndex >= total - 1;
+      $('#textDialog').scrollTop = 0;
+    } catch { $('#accessibleText').textContent = 'This section could not be read. Try the next section.'; }
+  }
+  function openText() {
+    if (!S.src) { toast('try', 'Open a book to use the text reader.'); return; }
+    textSource = S.src;
+    const sections = S.src.kind === 'epub' ? S.src.sections().filter(s => !s.skip) : null;
+    textIndex = sections ? Math.max(0, sections.findIndex(s => s.i === S.src.sectionOf(currentPage()))) : Math.max(0, currentPage() - 1);
+    openDialog('textDialog'); renderText();
+  }
+  function init() {
+    $('#roomDate').textContent = new Date().toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long' });
+    const turning=el('div','field');
+    turning.innerHTML='<label>Page turning</label><div class="turn-options"><label for="turnStyle">Paper movement<select id="turnStyle"><option value="curved">Curved paper</option><option value="flat">Flat sheets</option></select></label><label for="turnSpeed">Turn speed<select id="turnSpeed"><option value="1.35">Unhurried</option><option value="1">Natural</option><option value="0.7">Brisk</option></select></label><label for="scrollTurns">Scroll to turn<select id="scrollTurns"><option value="normal">Normal</option><option value="gentle">Gentle</option><option value="fast">Fast</option><option value="off">Off</option></select></label></div><p class="muted" style="font-size:11px;line-height:1.6">Click the outer margins or use the arrows. Rapid clicks turn several sheets together. Drag across text to select it. Escape stops queued turns after the current turn.</p>';
+    $('#type .body').prepend(turning);
+    $('#turnStyle').value=S.room.curve===false?'flat':'curved';$('#turnStyle').onchange=e=>{S.room.curve=e.target.value==='curved';saveRoom();};
+    $('#turnSpeed').value=String(S.room.turnSpeed || 1);$('#turnSpeed').onchange=e=>{S.room.turnSpeed=Number(e.target.value);saveRoom();};
+    $('#scrollTurns').value=S.room.scrollTurns || 'normal';$('#scrollTurns').onchange=e=>{S.room.scrollTurns=e.target.value;wheelAcc=0;saveRoom();};
+    const turnQueue=el('button','','');turnQueue.id='turnQueue';turnQueue.hidden=true;turnQueue.onclick=stopQueuedTurns;turnQueue.setAttribute('aria-label','Stop queued page turns');$('#stage').append(turnQueue);
+    dialog('accessDialog', 'Make yourself comfortable', `<p>Choose what helps you read. These preferences are saved on this device.</p>
+      <label class="setting-row"><span>Reduce motion<small>Calm page turns and effects. Your system preference is always respected.</small></span><input id="pref-reduce" type="checkbox"></label>
+      <label class="setting-row"><span>Higher contrast<small>Stronger text, controls and boundaries.</small></span><input id="pref-contrast" type="checkbox"></label>
+      <label class="setting-row"><span>Larger controls<small>More room for touch and pointer interaction.</small></span><input id="pref-large" type="checkbox"></label>
+      <label class="setting-row"><span>Single-key shortcuts<small>Turn off if letter shortcuts interfere with your assistive technology.</small></span><input id="pref-shortcuts" type="checkbox"></label>
+      <div class="dialog-actions"><button class="primary-action" id="openTextReader">Open text reader</button><button class="chip" id="comfortPreset">Comfortable type preset</button></div><p>The text reader presents one complete section at a time in a simple, selectable reading order. Image-only PDFs need OCR before their text can be read.</p>`);
+    dialog('sessionDialog', 'A little time to read', `<p>Settle in for an uninterrupted reading session.</p><div class="timer-presets" role="group" aria-label="Session duration"><button class="chip" data-minutes="15" aria-pressed="false">15 min</button><button class="chip" data-minutes="25" aria-pressed="true">25 min</button><button class="chip" data-minutes="45" aria-pressed="false">45 min</button></div><div class="timer-display" id="sessionTime">25:00</div><p class="timer-description" id="sessionState"></p><div class="dialog-actions"><button class="primary-action" id="sessionToggle">Start session</button><button class="chip" id="sessionReset">Reset</button></div>`);
+    dialog('textDialog', 'Text reader', `<p id="textHeading"></p><div id="textNavigation"><button class="chip" id="textPrevious">← Previous</button><span id="textLocation" role="status"></span><button class="chip" id="textNext">Next →</button></div><article id="accessibleText" tabindex="0" aria-label="Book text"></article>`);
+    const badge = el('button', '', '25:00'); badge.id = 'sessionBadge'; badge.hidden = true; document.body.append(badge); badge.onclick = () => openDialog('sessionDialog');
+    const access = el('button', 'ico'); access.innerHTML = '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><path d="M4 9l8 2 8-2M12 11v5m0 0-4 5m4-5 4 5"/></g></svg>'; access.id = 'accessBtn'; access.title = 'Accessibility'; access.setAttribute('aria-label','Accessibility settings'); access.onclick = () => openDialog('accessDialog');
+    const session = el('button', 'ico'); session.innerHTML = '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3"/></g></svg>'; session.id = 'sessionBtn'; session.title = 'Reading timer'; session.setAttribute('aria-label','Reading timer'); session.onclick = () => openDialog('sessionDialog');
+    $('#topbar').insertBefore(access, $('#cmdBtn')); $('#topbar').insertBefore(session, access);
+    const mobile = el('button', 'chip', 'Accessibility & text reader'); mobile.onclick = access.onclick; $('#mobileMenu .body').append(mobile);
+    const mobileTimer = el('button', 'chip', 'Reading timer'); mobileTimer.onclick = session.onclick; $('#mobileMenu .body').append(mobileTimer);
+    $('#homeAccess').onclick = access.onclick; $('#homeSession').onclick = session.onclick;
+    $('#homeKeys').onclick = () => Keys.open(); $('#homeGoal').onclick = () => togglePanel('stats');
+    $('#sampleBtn').onclick = $('#emptySample').onclick = sample;
+    $('#resumeBook').onclick = () => resume ? Library.openFromShelf(resume) : sample();
+    $('#shelfAdd').onclick = pick;
+    $('#shelfSearch').oninput = e => { query = e.target.value; Library.render(); };
+    $('#shelfSort').value = shelf.sort; $('#shelfSort').onchange = e => { shelf.sort = e.target.value; saveShelf(); };
+    $('#shelfView').onclick = () => { shelf.list = !shelf.list; saveShelf(); };
+    document.querySelectorAll('[data-filter]').forEach(b => { b.setAttribute('aria-pressed',String(b.dataset.filter === shelf.filter)); b.onclick = () => { shelf.filter = b.dataset.filter; document.querySelectorAll('[data-filter]').forEach(x => x.setAttribute('aria-pressed',String(x === b))); saveShelf(); }; });
+    function saveShelf() { Store.set('flipbook.shelfView',shelf); Library.render(); }
+    document.querySelectorAll('[id^="pref-"]').forEach(input => input.onchange = () => { prefs[input.id.slice(5)] = input.checked; applyPrefs(); scheduleReflow(); });
+    motion.addEventListener('change', applyPrefs); applyPrefs();
+    $('#comfortPreset').onclick = () => { Object.assign(S.type,{font:'atkinson',size:120,lead:1.8,align:'start',publisher:false}); afterType(); toast('ok','Comfortable type applied. Adjust it anytime in Type & theme.'); };
+    $('#openTextReader').onclick = openText;
+    $('#textPrevious').onclick = () => { textIndex--; renderText(); }; $('#textNext').onclick = () => { textIndex++; renderText(); };
+    $('#sessionToggle').onclick = () => { if (remaining <= 0) remaining = duration * 60; running = !running; lastTick = performance.now(); timerPaint(); };
+    $('#sessionReset').onclick = () => { running = false; remaining = duration * 60; timerPaint(); };
+    document.querySelectorAll('[data-minutes]').forEach(b => b.onclick = () => { duration = Number(b.dataset.minutes); remaining = duration * 60; running = false; document.querySelectorAll('[data-minutes]').forEach(x => x.setAttribute('aria-pressed',String(x === b))); timerPaint(); });
+    document.addEventListener('visibilitychange', () => { lastTick = performance.now(); }); setInterval(tick, 1000); timerPaint();
+    COMMANDS.unshift({g:'Read',l:'Accessible text reader',ic:'Aa',run:openText,when:()=>S.src}, {g:'Room',l:'Accessibility settings',ic:'◉',run:access.onclick}, {g:'Read',l:'Reading session timer',ic:'◷',run:session.onclick});
+    // Hidden file inputs need a real keyboard-operable trigger.
+    document.querySelectorAll('label:has(input[type=file])').forEach(label => { label.tabIndex = 0; label.setAttribute('role','button'); label.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); label.querySelector('input').click(); } }; });
+    document.querySelectorAll('button[title]:not([aria-label])').forEach(b => b.setAttribute('aria-label',b.title));
+    document.querySelectorAll('input[type=range]:not([aria-label])').forEach(i => { const row = i.closest('.mini-field,.field,label'); i.setAttribute('aria-label',row?.querySelector('span,label')?.textContent || ({rMargin:'Page margins',ttsRate:'Read aloud speed'}[i.id]) || i.id); });
+    $('#book').tabIndex = 0; $('#book').setAttribute('role','region'); $('#book').setAttribute('aria-label','Book. Use arrow keys to turn pages or open the text reader in Accessibility.');
+    $('#palIn').setAttribute('role','combobox'); $('#palIn').setAttribute('aria-controls','palList'); $('#palIn').setAttribute('aria-expanded','true'); $('#palIn').setAttribute('aria-autocomplete','list');
+    new MutationObserver(() => { const options = [...$('#palList').querySelectorAll('[role=option]')]; options.forEach((o,i) => o.id = 'command-option-' + i); const selected = options.find(o => o.getAttribute('aria-selected') === 'true'); if(selected) $('#palIn').setAttribute('aria-activedescendant',selected.id); else $('#palIn').removeAttribute('aria-activedescendant'); }).observe($('#palList'),{childList:true,subtree:true,attributes:true,attributeFilter:['aria-selected']});
+    const tabs = [...$('#toc').querySelectorAll('[role=tab]')];
+    tabs.forEach(t => { t.id = 'tab-' + t.dataset.tab; t.setAttribute('aria-controls',t.dataset.tab === 'contents' ? 'tocBody' : t.dataset.tab === 'notes' ? 'notesBody' : 'hitsBody'); t.addEventListener('keydown',e => { if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); const i=tabs.indexOf(t), n=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length; tabs[n].click();tabs[n].focus(); } }); });
+    for (const pane of $('#toc').querySelectorAll('[data-pane]')) { pane.setAttribute('role','tabpanel'); pane.setAttribute('aria-labelledby','tab-' + pane.dataset.pane); }
+    new MutationObserver(() => tabs.forEach(t => t.tabIndex=t.getAttribute('aria-selected')==='true'?0:-1)).observe($('#toc .tabs'),{subtree:true,attributes:true,attributeFilter:['aria-selected']});
+    tabs.forEach(t => t.tabIndex = t.getAttribute('aria-selected') === 'true' ? 0 : -1);
+    initFocus();
+  }
+  function initFocus() {
+    let active = null, restore = null;
+    const overlays = [...document.querySelectorAll('#palette,#keys,#grid,#lightbox,#sprint,#pop,.panel')];
+    function update() {
+      const next = overlays.find(d => d.classList.contains('panel') ? d.dataset.open === '1' : !d.hidden) || null;
+      overlays.forEach(d => { d.inert = d !== next; if (d === next) { d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); } else d.removeAttribute('aria-modal'); });
+      if (active === next) return;
+      if (!active && next) restore = document.activeElement;
+      const previous = active; active = next;
+      for (const id of ['topbar','stage','bottombar']) $('#' + id).inert = !!next;
+      if (next) {
+        next.tabIndex = -1;
+        if (!next.contains(document.activeElement)) (next.querySelector('input:not([type=hidden]),button:not([disabled]),[tabindex="0"]') || next).focus({preventScroll:true});
+      } else if (previous && restore?.isConnected && !document.querySelector('dialog[open]')) { restore.focus({preventScroll:true}); }
+    }
+    const observer = new MutationObserver(update); overlays.forEach(d => observer.observe(d,{attributes:true,attributeFilter:['hidden','data-open']})); update();
+    document.addEventListener('keydown', e => {
+      if (!active || document.querySelector('dialog[open]')) return;
+      if (e.key === 'Tab') {
+        const items = [...active.querySelectorAll('button:not([disabled]),input:not([disabled]),select,a[href],[tabindex="0"]')].filter(n => !n.closest('[hidden]') && n.getClientRects().length);
+        const first=items[0] || active, last=items.at(-1) || active;
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === active)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || !active.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+      }
+      if(e.key==='Escape' && active.classList.contains('panel')) { e.preventDefault(); e.stopPropagation(); closePanels(); }
+    },true);
+  }
+  return {init,filter,dashboard,sample,openText,get shortcuts(){return prefs.shortcuts;}};
+})();
+const SAMPLE_BOOK = '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';
+
 /* ── init ──────────────────────────────────────────────────────────────── */
 (function init() {
+  ReadingRoom.init();
   buildFaceChips();
   setTheme(S.theme);
   Themes.warmth();
